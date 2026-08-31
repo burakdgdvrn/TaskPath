@@ -13,6 +13,8 @@ async def lifespan(app: FastAPI):
     yield
 
 
+import os
+
 app = FastAPI(
     title="TaskPath API",
     description="Organik büyüyen görev haritası — Backend API",
@@ -20,11 +22,19 @@ app = FastAPI(
     lifespan=lifespan,
 )
 
-# CORS — allow frontend dev server
+# CORS — allow frontend dev server and production
+frontend_url = os.getenv("FRONTEND_URL", "*")
+allowed_origins = [
+    "http://localhost:5173",
+    "http://127.0.0.1:5173",
+]
+if frontend_url and frontend_url != "*":
+    allowed_origins.append(frontend_url)
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:5173", "http://127.0.0.1:5173"],
-    allow_credentials=True,
+    allow_origins=["*"] if frontend_url == "*" else allowed_origins,
+    allow_credentials=True if frontend_url != "*" else False,  # credentials require specific origins
     allow_methods=["*"],
     allow_headers=["*"],
 )
