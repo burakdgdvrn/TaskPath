@@ -4,7 +4,7 @@ const initialTheme = localStorage.getItem('taskpath_theme') || 'dark';
 document.documentElement.setAttribute('data-theme', initialTheme);
 
 const useUIStore = create((set) => ({
-  sidebarOpen: true,
+  sidebarOpen: window.innerWidth > 768,
   createBoardModalOpen: false,
   createNodeModalOpen: false,
   newNodePosition: null,

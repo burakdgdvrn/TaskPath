@@ -11,11 +11,12 @@ import GlobalChatWidget from '../chat/GlobalChatWidget';
 import OnboardingModal from './OnboardingModal';
 import useUIStore from '../../stores/uiStore';
 import useSocket from '../../hooks/useSocket';
-import { useEffect } from 'react';
+import { useEffect, useCallback } from 'react';
 
 export default function AppLayout() {
   useSocket();
   const sidebarOpen = useUIStore(s => s.sidebarOpen);
+  const setSidebarOpen = useUIStore(s => s.setSidebarOpen);
   const profileModalOpen = useUIStore(s => s.profileModalOpen);
   
   const createWorkspaceModalOpen = useUIStore(s => s.createWorkspaceModalOpen);
@@ -41,6 +42,16 @@ export default function AppLayout() {
       localStorage.setItem('taskpath_has_seen_onboarding', 'true');
     }
   }, [openOnboardingModal]);
+
+  // Auto-close/open sidebar on viewport resize
+  useEffect(() => {
+    const mql = window.matchMedia('(max-width: 768px)');
+    const handler = (e) => {
+      setSidebarOpen(!e.matches);
+    };
+    mql.addEventListener('change', handler);
+    return () => mql.removeEventListener('change', handler);
+  }, [setSidebarOpen]);
 
   return (
     <div className="app-layout">
