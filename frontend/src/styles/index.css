@@ -2543,6 +2543,7 @@ select.input {
 
   /* Canvas Toolbar — bigger touch targets, safe area */
   .canvas-toolbar {
+    position: fixed !important;
     bottom: max(16px, env(safe-area-inset-bottom, 16px));
     left: 12px;
     right: 12px;
@@ -2729,18 +2730,6 @@ select.input {
   .btn-icon.btn-sm {
     width: 36px;
     height: 36px;
-  }
-
-  .btn-icon svg {
-    width: 24px !important;
-    height: 24px !important;
-  }
-
-  .topbar-left .btn-icon svg,
-  .topbar-right .btn-icon svg,
-  .canvas-toolbar .btn-icon svg {
-    width: 28px !important;
-    height: 28px !important;
   }
 
   /* ---- Chat Widget Mobile — Full Screen ---- */
@@ -2999,12 +2988,6 @@ select.input {
   .task-node {
     min-width: 180px;
     max-width: 250px;
-  }
-
-  /* Scale up all icons inside the nodes to make them easier to see/touch */
-  .react-flow__node svg {
-    transform: scale(1.3);
-    transform-origin: center;
   }
 
   /* React Flow handles — always visible on mobile for easier connection */
