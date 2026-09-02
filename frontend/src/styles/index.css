@@ -2725,6 +2725,7 @@ select.input {
   .btn-icon {
     width: 40px;
     height: 40px;
+    padding: 0 !important;
   }
 
   .btn-icon.btn-sm {
