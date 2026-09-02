@@ -1,5 +1,5 @@
-/* ===================================================
-   TaskPath — Design System
+﻿/* ===================================================
+   TaskPath ÔÇö Design System
    Premium dark theme with glassmorphism aesthetics
    =================================================== */
 
@@ -1819,6 +1819,49 @@ select.input {
   transform: translateY(1px);
 }
 
+/* ---------- Responsive ---------- */
+@media (max-width: 768px) {
+  .sidebar-overlay {
+    display: block; /* Show overlay on mobile */
+  }
+
+  .onboarding-container {
+    padding: var(--space-md);
+  }
+
+  .onboarding-content {
+    padding: var(--space-xl) var(--space-lg);
+  }
+
+  .onboarding-title {
+    font-size: var(--font-xl);
+  }
+
+  .onboarding-desc {
+    font-size: var(--font-base);
+  }
+
+  .onboarding-footer {
+    padding: var(--space-lg) var(--space-md);
+  }
+
+  .dashboard {
+    padding: var(--space-lg);
+  }
+
+  .board-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .node-detail-panel {
+    width: 100%;
+  }
+
+  .auth-card {
+    padding: var(--space-2xl);
+  }
+}
+
 /* ---------- Command Palette ---------- */
 .command-palette-overlay {
   position: fixed;
@@ -2248,6 +2291,7 @@ select.input {
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
 }
 
+/* Light mode specific override for incoming bubble */
 [data-theme="light"] .chat-bubble.other {
   background: #ffffff;
   border: 1px solid rgba(0, 0, 0, 0.04);
@@ -2347,766 +2391,21 @@ select.input {
   transform: none;
 }
 
-/* ==========================================================
-   MOBILE RESPONSIVE — Complete Overhaul
-   Breakpoints: 768px (tablet/mobile), 480px (small mobile)
-   ========================================================== */
-
-/* ---- Touch & General Mobile Foundations ---- */
+/* ---------- Responsive Adjustments ---------- */
 @media (max-width: 768px) {
-
-  /* Better touch defaults */
-  * {
-    -webkit-tap-highlight-color: transparent;
-  }
-
-  html {
-    -webkit-text-size-adjust: 100%;
-  }
-
-  body {
-    overscroll-behavior: none;
-  }
-
-  /* ---- Sidebar Mobile ---- */
-  .sidebar-overlay {
-    display: block;
-  }
-
-  .sidebar {
-    position: fixed;
-    top: 0;
-    left: 0;
-    z-index: 10000;
-    box-shadow: 4px 0 32px rgba(0, 0, 0, 0.6);
-    animation: slideInLeft 0.3s cubic-bezier(0.16, 1, 0.3, 1);
-    width: min(280px, 85vw);
-    height: 100vh;
-    height: 100dvh;
-  }
-
-  .sidebar-overlay {
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100vw;
-    height: 100vh;
-    height: 100dvh;
-    background: rgba(0, 0, 0, 0.5);
-    backdrop-filter: blur(4px);
-    z-index: 9999;
-    animation: fadeIn 0.3s ease-out;
-  }
-
-  .sidebar-nav-item {
-    padding: var(--space-md) var(--space-md);
-    min-height: 44px;
-    font-size: var(--font-base);
-  }
-
-  .sidebar-nav-item svg {
-    width: 20px;
-    height: 20px;
-  }
-
-  .sidebar-footer {
-    padding: var(--space-md);
-  }
-
-  .sidebar-footer .btn {
-    min-height: 40px;
-    font-size: var(--font-sm);
-  }
-
-  .sidebar-user {
-    padding: var(--space-md);
-  }
-
-  .sidebar-header {
-    padding: var(--space-md);
-    min-height: 56px;
-  }
-
-  /* ---- TopBar Mobile ---- */
-  .topbar {
-    padding: 0 var(--space-sm);
-    height: var(--topbar-height);
-    gap: var(--space-xs);
-  }
-
-  .topbar-left {
-    gap: var(--space-sm);
-    flex-shrink: 0;
-  }
-
-  .topbar-left .btn-icon {
-    width: 40px;
-    height: 40px;
-  }
-
-  .topbar-breadcrumb {
-    display: none;
-  }
-
-  .topbar-center {
-    flex: 1;
-    max-width: none;
-    margin: 0 var(--space-xs);
-  }
-
-  .topbar-right {
-    flex-shrink: 0;
-    gap: var(--space-xs);
-  }
-
-  .topbar-right .btn-icon {
-    width: 40px;
-    height: 40px;
-  }
-
-  /* ---- Dashboard Mobile ---- */
-  .dashboard {
-    padding: var(--space-lg);
-  }
-
-  .dashboard-header {
-    flex-direction: column;
-    align-items: flex-start;
-    gap: var(--space-lg);
-    margin-bottom: var(--space-xl);
-  }
-
-  .dashboard-header h1 {
-    font-size: var(--font-xl);
-    line-height: 1.3;
-  }
-
-  .dashboard-header > div:last-child {
-    display: flex;
-    width: 100%;
-    gap: var(--space-sm);
-  }
-
-  .dashboard-header > div:last-child .btn {
-    flex: 1;
-    justify-content: center;
-    min-height: 44px;
-    font-size: var(--font-sm);
-  }
-
-  .dashboard-section {
-    margin-bottom: var(--space-2xl);
-  }
-
-  .board-grid {
-    grid-template-columns: 1fr;
-    gap: var(--space-md);
-  }
-
-  .board-card {
-    padding: var(--space-lg);
-  }
-
-  .board-card-name {
-    font-size: var(--font-base);
-  }
-
-  .board-card-header {
-    gap: var(--space-sm);
-  }
-
-  /* Make edit/delete action buttons bigger for touch */
-  .board-card-actions button {
-    min-width: 40px;
-    min-height: 40px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    border-radius: var(--radius-md);
-  }
-
-  .board-card-actions button:active {
-    background: var(--glass-bg-hover);
-  }
-
-  .create-board-card {
-    min-height: 100px;
-    padding: var(--space-lg);
-  }
-
-  /* ---- Canvas / Board Page Mobile ---- */
-  .board-page {
-    touch-action: none;
-  }
-
-  /* Canvas Toolbar — bigger touch targets, safe area */
-  .canvas-toolbar {
-    bottom: max(16px, env(safe-area-inset-bottom, 16px));
-    left: 12px;
-    right: 12px;
-    transform: none;
-    width: auto;
-    max-width: none;
-    justify-content: flex-start;
-    padding: var(--space-sm);
-    gap: var(--space-sm);
-    border-radius: var(--radius-xl);
-    box-shadow: 0 8px 40px rgba(0, 0, 0, 0.5);
-    overflow-x: auto;
-    -webkit-overflow-scrolling: touch;
-  }
-
-  .canvas-toolbar .btn-icon {
-    width: 40px;
-    height: 40px;
-    flex-shrink: 0;
-  }
-
-  .canvas-toolbar .btn-icon.btn-sm {
-    width: 40px;
-    height: 40px;
-  }
-
-  .canvas-toolbar .divider {
-    height: 20px;
-    margin: 0 2px;
-  }
-
-  .canvas-toolbar .zoom-display {
-    min-width: 44px;
-    font-size: var(--font-sm);
-  }
-
-  /* Node Detail Panel — full screen slide-over on mobile */
-  .node-detail-panel {
-    position: fixed;
-    top: 0;
-    right: 0;
-    left: 0;
-    width: 100%;
-    height: 100vh;
-    height: 100dvh;
-    z-index: 1000;
-    border-left: none;
-    border-radius: 0;
-    box-shadow: none;
-    background: var(--bg-secondary);
-  }
-
-  .node-detail-header {
-    padding: var(--space-md) var(--space-lg);
-    min-height: 56px;
-  }
-
-  .node-detail-header .btn-icon {
-    width: 40px;
-    height: 40px;
-  }
-
-  .node-detail-body {
-    padding: var(--space-lg);
-    gap: var(--space-lg);
-    padding-bottom: calc(var(--space-lg) + env(safe-area-inset-bottom, 0px));
-  }
-
-  .node-detail-footer {
-    padding: var(--space-md) var(--space-lg);
-    padding-bottom: calc(var(--space-md) + env(safe-area-inset-bottom, 0px));
-  }
-
-  .node-detail-footer .btn {
-    min-height: 44px;
-  }
-
-  /* Multi-node detail panel — same treatment */
-  .multi-node-detail-panel {
-    position: fixed;
-    top: 0;
-    right: 0;
-    left: 0;
-    width: 100%;
-    height: 100vh;
-    height: 100dvh;
-    z-index: 1000;
-    border-left: none;
-  }
-
-  /* React Flow minimap — hide on mobile */
-  .react-flow__minimap {
-    display: none !important;
-  }
-
-  /* ---- Modals — Bottom Sheet Style Mobile ---- */
-  .modal-overlay {
-    align-items: flex-end;
-    padding: 0;
-  }
-
-  .modal {
-    width: 100%;
-    max-width: 100%;
-    max-height: 92vh;
-    max-height: 92dvh;
-    border-radius: var(--radius-xl) var(--radius-xl) 0 0;
-    animation: slideUpModal 0.35s cubic-bezier(0.16, 1, 0.3, 1);
-  }
-
-  @keyframes slideUpModal {
-    from { transform: translateY(100%); opacity: 0.5; }
-    to { transform: translateY(0); opacity: 1; }
-  }
-
-  .modal-header {
-    padding: var(--space-lg) var(--space-xl);
-    min-height: 56px;
-  }
-
-  .modal-header .btn-icon {
-    width: 40px;
-    height: 40px;
-  }
-
-  .modal-body {
-    padding: var(--space-lg) var(--space-xl);
-    gap: var(--space-md);
-    overflow-y: auto;
-    -webkit-overflow-scrolling: touch;
-  }
-
-  .modal-footer {
-    padding: var(--space-md) var(--space-xl);
-    padding-bottom: calc(var(--space-md) + env(safe-area-inset-bottom, 0px));
-  }
-
-  .modal-footer .btn {
-    min-height: 44px;
-  }
-
-  .modal-title {
-    font-size: var(--font-base);
-  }
-
-  /* ---- Inputs Mobile — bigger for touch ---- */
-  .input {
-    padding: var(--space-md) var(--space-lg);
-    font-size: 16px; /* Prevents iOS zoom on input focus */
-    min-height: 44px;
-  }
-
-  select.input {
-    min-height: 44px;
-    font-size: 16px;
-  }
-
-  textarea.input {
-    font-size: 16px;
-    min-height: 100px;
-  }
-
-  /* ---- Buttons Mobile — touch-friendly ---- */
-  .btn {
-    min-height: 40px;
-    font-size: var(--font-sm);
-    padding: var(--space-sm) var(--space-lg);
-  }
-
-  .btn-sm {
-    min-height: 36px;
-  }
-
-  .btn-lg {
-    min-height: 48px;
-    font-size: var(--font-base);
-  }
-
-  .btn-icon {
-    width: 40px;
-    height: 40px;
-  }
-
-  .btn-icon.btn-sm {
-    width: 36px;
-    height: 36px;
-  }
-
-  .btn-icon svg {
-    width: 20px !important;
-    height: 20px !important;
-  }
-
-  .topbar-left .btn-icon svg,
-  .topbar-right .btn-icon svg,
-  .canvas-toolbar .btn-icon svg {
-    width: 24px !important;
-    height: 24px !important;
-  }
-
-  /* ---- Chat Widget Mobile — Full Screen ---- */
   .chat-widget-container.sidebar-open,
   .chat-widget-container.sidebar-closed {
     left: 0 !important;
     bottom: 0 !important;
-    right: 0;
     width: 100vw;
     height: 100vh;
-    height: 100dvh;
-    z-index: 10001;
   }
-
+  
   .chat-widget-panel {
-    width: 100%;
-    height: 100%;
-    max-height: 100%;
+    width: 100vw;
+    height: 100vh;
+    max-height: 100vh;
     border-radius: 0;
     border: none;
-  }
-
-  .chat-widget-header {
-    padding: var(--space-md) var(--space-lg);
-    min-height: 56px;
-  }
-
-  .chat-widget-header .btn-icon {
-    width: 40px;
-    height: 40px;
-  }
-
-  .chat-tab {
-    padding: var(--space-md) 0;
-    font-size: var(--font-sm);
-    min-height: 44px;
-  }
-
-  .chat-list-item {
-    padding: var(--space-md);
-    min-height: 56px;
-  }
-
-  .chat-input-area {
-    padding: var(--space-md) var(--space-lg);
-    padding-bottom: calc(var(--space-md) + env(safe-area-inset-bottom, 0px));
-    gap: var(--space-md);
-  }
-
-  .chat-input {
-    font-size: 16px; /* prevent iOS zoom */
-    padding: 12px 16px;
-    min-height: 44px;
-    border-radius: 22px;
-  }
-
-  .chat-send-btn {
-    width: 44px;
-    height: 44px;
-  }
-
-  .chat-bubble {
-    max-width: 85%;
-    font-size: var(--font-sm);
-    padding: var(--space-md) var(--space-lg);
-  }
-
-  .chat-avatar {
-    width: 36px;
-    height: 36px;
-    font-size: var(--font-xs);
-  }
-
-  /* ---- Auth Pages Mobile ---- */
-  .auth-split-layout {
-    flex-direction: column;
-  }
-
-  .auth-left {
-    display: flex;
-    padding: var(--space-xl) var(--space-lg) 0;
-    min-height: auto;
-    align-items: center;
-    text-align: center;
-  }
-
-  .auth-brand-content h1 {
-    font-size: var(--font-xl);
-    margin-bottom: var(--space-xs);
-  }
-
-  .auth-brand-content p {
-    display: none; /* hide the long description on mobile */
-  }
-
-  .auth-right {
-    flex: 1;
-    padding: var(--space-xl) var(--space-lg);
-    align-items: center;
-    justify-content: flex-start;
-  }
-
-  .auth-form-container {
-    max-width: 100%;
-    width: 100%;
-  }
-
-  .auth-form-header h2 {
-    font-size: var(--font-xl);
-  }
-
-  .auth-form-header p {
-    font-size: var(--font-sm);
-  }
-
-  .auth-input {
-    padding: 14px 16px;
-    font-size: 16px; /* prevent iOS zoom */
-    min-height: 48px;
-  }
-
-  .auth-btn {
-    padding: 16px;
-    font-size: var(--font-base);
-    min-height: 52px;
-    border-radius: var(--radius-md);
-  }
-
-  .auth-footer-link {
-    font-size: var(--font-sm);
-  }
-
-  .auth-error-banner {
-    font-size: var(--font-sm);
-    padding: var(--space-md);
-  }
-
-  /* ---- Onboarding Modal Mobile ---- */
-  .onboarding-container {
-    padding: var(--space-sm);
-    align-items: flex-end;
-  }
-
-  .onboarding-modal {
-    max-width: 100%;
-    width: 100%;
-    border-radius: var(--radius-xl) var(--radius-xl) 0 0;
-    max-height: 90vh;
-    max-height: 90dvh;
-  }
-
-  .onboarding-content {
-    padding: var(--space-xl) var(--space-lg);
-  }
-
-  .onboarding-title {
-    font-size: var(--font-xl);
-  }
-
-  .onboarding-desc {
-    font-size: var(--font-base);
-    line-height: 1.5;
-  }
-
-  .onboarding-footer {
-    padding: var(--space-md);
-    padding-bottom: calc(var(--space-md) + env(safe-area-inset-bottom, 0px));
-  }
-
-  .onboarding-btn-next {
-    padding: var(--space-md) var(--space-lg);
-    min-height: 44px;
-    font-size: var(--font-sm);
-  }
-
-  .onboarding-btn-prev {
-    min-width: 44px;
-    min-height: 44px;
-  }
-
-  .onboarding-icon-glass {
-    padding: var(--space-lg);
-  }
-
-  /* ---- Command Palette Mobile ---- */
-  .command-palette-overlay {
-    padding-top: 5vh;
-    padding-left: var(--space-sm);
-    padding-right: var(--space-sm);
-  }
-
-  .command-palette-modal {
-    max-width: 100%;
-    border-radius: var(--radius-lg);
-  }
-
-  .command-palette-header {
-    padding: var(--space-md);
-  }
-
-  .command-palette-input {
-    font-size: 16px; /* prevent iOS zoom */
-  }
-
-  .command-palette-content {
-    max-height: 60vh;
-  }
-
-  .command-palette-item {
-    padding: var(--space-md);
-    min-height: 48px;
-  }
-
-  /* ---- Context Menus Mobile — centered, bigger ---- */
-  .glass[style*="position: fixed"][style*="zIndex: 1000"],
-  .glass[style*="position: fixed"][style*="z-index: 1000"] {
-    min-width: 200px !important;
-  }
-
-  .glass .btn-sm {
-    min-height: 44px;
-    font-size: var(--font-sm);
-  }
-
-  /* ---- Empty State Mobile ---- */
-  .empty-state {
-    padding: var(--space-2xl) var(--space-lg);
-  }
-
-  .empty-state svg {
-    width: 40px;
-    height: 40px;
-  }
-
-  .empty-state h3 {
-    font-size: var(--font-base);
-  }
-
-  .empty-state p {
-    font-size: var(--font-sm);
-    max-width: 280px;
-  }
-
-  /* ---- Badge Mobile — slightly bigger ---- */
-  .badge {
-    padding: 3px 10px;
-    font-size: var(--font-xs);
-  }
-
-  /* ---- Toast Mobile ---- */
-  .toast-custom {
-    max-width: calc(100vw - 32px) !important;
-  }
-
-  /* ---- Node styles on mobile ---- */
-  .task-node {
-    min-width: 180px;
-    max-width: 250px;
-  }
-
-  /* React Flow handles — always visible on mobile for easier connection */
-  .react-flow__handle {
-    opacity: 1 !important;
-    width: 12px !important;
-    height: 12px !important;
-  }
-}
-
-/* ---- Extra Small Devices (≤480px) ---- */
-@media (max-width: 480px) {
-
-  .dashboard {
-    padding: var(--space-md);
-  }
-
-  .dashboard-header h1 {
-    font-size: var(--font-lg);
-  }
-
-  .dashboard-header > div:last-child {
-    flex-direction: column;
-  }
-
-  .board-card {
-    padding: var(--space-md);
-  }
-
-  .board-card-name {
-    font-size: var(--font-sm);
-  }
-
-  .topbar {
-    padding: 0 var(--space-xs);
-  }
-
-  .auth-right {
-    padding: var(--space-lg) var(--space-md);
-  }
-
-  .auth-form-header h2 {
-    font-size: var(--font-lg);
-  }
-
-  .modal-body {
-    padding: var(--space-md);
-  }
-
-  .modal-header {
-    padding: var(--space-md) var(--space-lg);
-  }
-
-  .modal-footer {
-    padding: var(--space-md) var(--space-lg);
-  }
-
-  .onboarding-content {
-    padding: var(--space-lg) var(--space-md);
-  }
-
-  .chat-bubble {
-    max-width: 90%;
-  }
-
-  .node-detail-body {
-    padding: var(--space-md);
-  }
-
-  .canvas-toolbar {
-    bottom: max(12px, env(safe-area-inset-bottom, 12px));
-    padding: var(--space-xs);
-    gap: var(--space-xs);
-  }
-
-  .canvas-toolbar .btn-icon,
-  .canvas-toolbar .btn-icon.btn-sm {
-    width: 36px;
-    height: 36px;
-  }
-}
-
-/* ---- Landscape Mobile (short height) ---- */
-@media (max-height: 500px) and (max-width: 900px) {
-  .modal {
-    max-height: 95vh;
-  }
-
-  .onboarding-modal {
-    max-height: 95vh;
-  }
-
-  .onboarding-content {
-    padding: var(--space-md);
-  }
-
-  .onboarding-icon-wrapper {
-    margin-bottom: var(--space-md);
-  }
-
-  .onboarding-title {
-    font-size: var(--font-lg);
-    margin-bottom: var(--space-sm);
-  }
-
-  .node-detail-panel {
-    height: 100vh;
-  }
-
-  .auth-right {
-    padding-top: var(--space-lg);
   }
 }
