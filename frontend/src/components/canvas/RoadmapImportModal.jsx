@@ -3,136 +3,104 @@ import { X, Wand2, ArrowRight, Copy, Check } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import toast from 'react-hot-toast';
 import dagre from 'dagre';
+import { jsonrepair } from 'jsonrepair';
 import { apiImportRoadmap } from '../../services/api';
 
-const PROMPT_TEMPLATE = `Sen bir sistem mimarısın. Bize [PROJE KONUNUZU YAZIN] projesi için bir yol haritası (roadmap) hazırla.
-Çıktın, bizim özel sistemimiz tarafından otomatik olarak bir Akış Şemasına (Flowchart) dönüştürülecektir. 
+const PROMPT_TEMPLATE = `Sen dünya çapında tecrübeli bir Senior Yazılım Mimarı ve Agile Proje Yöneticisisin. 
+Bize [PROJE KONUNUZU YAZIN] projesi için çok kapsamlı, gerçek hayat senaryosuna uygun bir yol haritası (roadmap) hazırla.
 
-SİSTEMİN ÇALIŞMA MANTIĞI (Ağaç Yapısı & Oklar):
-1. Sistemimiz, Markdown listesindeki girintileri (indentation) okuyarak oklar (bağlantılar) çizer. KESİNLİKLE her girinti için tam 4 boşluk (space) kullan.
-2. **Sıralı Akış (Soldan Sağa):** Bir görevin, diğerinden SONRA gelmesini istiyorsan onu bir eskisinin ALTINA (4 boşluk içeriye) yazmalısın. (Örn: A'nın içine B'yi, B'nin içine C'yi yazarsan A -> B -> C şeklinde soldan sağa zincir oluşur).
-3. **Paralel Akış (Aynı Anda):** Görevlerin aynı anda (alt alta) yapılmasını istiyorsan onları AYNI HİZADA yazmalısın.
+SİSTEMİN ÇALIŞMA MANTIĞI:
+Bize çıktıyı KESİNLİKLE sadece aşağıdaki JSON şemasına uygun olarak vermelisin. Çıktın doğrudan sistemimiz tarafından okunup bir Directed Acyclic Graph (DAG) olarak çizilecek.
 
-HÜCRE TÜRLERİ (Başına köşeli parantez ile yazılır):
-- \`[Start]\`: Haritanın başlangıç noktasıdır. En üstte 0 girintiyle sadece 1 tane olmalıdır.
-- \`[Milestone]\`: Ana aşamalar ve dönüm noktalarıdır. Projenin büyük fazlarını temsil eder.
-- \`[Wiki]\`: O aşamanın kuralları, notları veya referans bilgileridir. Daima bilgi vermek için kullanılır.
-- \`[End]\`: Sürecin sonudur. En derin girintiye sahip son hücre olmalıdır.
-- \`Standart Görev\`: Başına tür yazılmayan her şey, yapılması gereken standart iş parçalarıdır.
+KURALLAR:
+1. En az 30-40 görevden oluşan çok kapsamlı bir plan çıkar. Güvenlik, test, veritabanı, frontend, backend, devops, dokümantasyon gibi detayları atlama.
+2. Paralel İş Akışı: Aynı anda yapılabilecek işleri (örneğin tasarım yapılırken veritabanı şemasının çizilmesi) paralel ilerlet. Bunun için "edges" kısmında bir hedeften birden fazla göreve ok çıkar ve sonraki fazda bunları tekrar tek bir hedefte (örneğin bir test veya entegrasyon noktası) birleştir.
+3. HÜCRE TÜRLERİ (node_type): Sadece şu 5 değerden birini kullan: "startNode", "milestoneNode", "wikiNode", "taskNode", "endNode".
+4. ÖNCELİK (priority): "low", "medium", "high"
+5. ID DEĞERLERİ: Her node için "id" kesinlikle benzersiz (unique) olmalıdır (örn: "n1", "n2", "task_db_1" vb.).
 
-METADATA (İsteğe Bağlı):
-Görevlerin sonuna veya başına \`[Etiket:Tasarım]\`, \`[Öncelik:Yüksek]\` gibi etiketler ekleyebilirsin. Kısa açıklamaları (:) sonrasına yaz.
+Örnek Şema:
+\`\`\`json
+{
+  "nodes": [
+    { "id": "start", "label": "Proje Başlangıcı", "node_type": "startNode", "priority": "high", "description": "Gereksinimlerin toplanması", "tags": "Analiz" },
+    { "id": "m1", "label": "Faz 1: Mimari", "node_type": "milestoneNode", "priority": "high", "description": "", "tags": "" },
+    { "id": "t1", "label": "Veritabanı Tasarımı", "node_type": "taskNode", "priority": "medium", "description": "Tabloların oluşturulması", "tags": "Backend" },
+    { "id": "t2", "label": "UI/UX Tasarımı", "node_type": "taskNode", "priority": "medium", "description": "Figma ekranları", "tags": "Tasarım" },
+    { "id": "m2", "label": "Faz 2: Geliştirme", "node_type": "milestoneNode", "priority": "high", "description": "", "tags": "" }
+  ],
+  "edges": [
+    { "source": "start", "target": "m1" },
+    { "source": "m1", "target": "t1" },
+    { "source": "m1", "target": "t2" },
+    { "source": "t1", "target": "m2" },
+    { "source": "t2", "target": "m2" }
+  ]
+}
+\`\`\`
+Sadece \`\`\`json ... \`\`\` bloğunu döndür. Başka bir açıklama yapma.`;
 
-DOĞRU BİR ZİNCİRLEME ÖRNEĞİ (Görevler birbirini bekler):
-\`\`\`markdown
-- [Start] Proje Lansmanı: Sistemin başlatılması
-    - [Milestone] Faz 1: Analiz ve Tasarım
-        - [Wiki] Tasarım Kuralları: Renk paletleri ve yazı tipleri
-        - Müşteri Görüşmesi: İhtiyaçların alınması
-            - Telif Hakları İncelemesi: Hukuki sürecin kontrolü
-                - [Milestone] [Öncelik:Yüksek] Faz 2: Geliştirme
-                    - Veritabanı Kurulumu: Tabloların oluşturulması
-                        - API Entegrasyonu: Sunucu bağlantıları
-                            - [End] Canlıya Alma: Sistem yayını
-\`\`\``;
+const parseJSON = (text) => {
+  // Extract JSON block using Regex
+  const jsonMatch = text.match(/```(?:json)?\s*([\s\S]*?)\s*```/);
+  let rawJson = jsonMatch ? jsonMatch[1] : text;
 
-const parseMarkdown = (text) => {
-  const lines = text.split('\n');
-  const nodes = [];
-  const edges = [];
-  
-  // Normalize tabs to 4 spaces
-  const normalizedLines = lines.map(line => line.replace(/\t/g, '    '));
-  
-  let currentId = 1;
-  const stack = []; // stores { level, id }
-  
-  for (let line of normalizedLines) {
-    if (!line.trim()) continue;
-    
-    const headingMatch = line.match(/^(#+)\s+(.*)/);
-    let rawLevel, content;
-    
-    if (headingMatch) {
-      rawLevel = (headingMatch[1].length - 1) * 4; // # is level 0, ## is level 4 (equivalent to 1 indent)
-      content = headingMatch[2].trim();
-    } else {
-      const bulletMatch = line.match(/^(\s*)(?:-|\*)\s+(.*)/);
-      if (bulletMatch) {
-        rawLevel = bulletMatch[1].length;
-        content = bulletMatch[2].trim();
-      } else {
-        continue; // skip lines that aren't headers or bullets
-      }
+  let parsedData;
+  try {
+    parsedData = JSON.parse(rawJson);
+  } catch (err) {
+    try {
+      // Defensive 1: jsonrepair integration
+      const repaired = jsonrepair(rawJson);
+      parsedData = JSON.parse(repaired);
+    } catch (repairErr) {
+      throw new Error('Geçersiz JSON formatı. Lütfen AI çıktısını kontrol edip eksik parantezleri düzeltin.');
     }
-    
-    // Extract metadata
-    let cleanContent = content;
-    let nodeType = "task";
-    let priority = "medium";
-    let tags = "";
-    let description = "";
-    
-    // [Start], [End], [Milestone], [Wiki] (Type)
-    const typeMatch = cleanContent.match(/^\[([a-zA-Z0-9_]+)\]/);
-    if (typeMatch && !typeMatch[1].toLowerCase().includes('etiket') && !typeMatch[1].toLowerCase().includes('öncelik')) {
-      const rawType = typeMatch[1].toLowerCase();
-      const typeMap = {
-        'startnode': 'startNode', 'start': 'startNode',
-        'endnode': 'endNode', 'end': 'endNode',
-        'milestonenode': 'milestoneNode', 'milestone': 'milestoneNode',
-        'wikinode': 'wikiNode', 'wiki': 'wikiNode', 'not': 'wikiNode',
-        'tasknode': 'taskNode', 'task': 'taskNode'
-      };
-      nodeType = typeMap[rawType] || rawType;
-      cleanContent = cleanContent.replace(/^\[[a-zA-Z0-9_]+\]/, '').trim();
-    }
-    
-    // [Öncelik:Yüksek]
-    const priorityMatch = cleanContent.match(/\[Öncelik:\s*(Düşük|Orta|Yüksek|Low|Medium|High)\]/i);
-    if (priorityMatch) {
-      const pMap = {
-        'düşük': 'low', 'low': 'low',
-        'orta': 'medium', 'medium': 'medium',
-        'yüksek': 'high', 'high': 'high'
-      };
-      priority = pMap[priorityMatch[1].toLowerCase()] || 'medium';
-      cleanContent = cleanContent.replace(/\[Öncelik:\s*.*?\]/i, '').trim();
-    }
-    
-    // [Etiket:AI,Frontend]
-    const tagMatch = cleanContent.match(/\[Etiket:\s*(.*?)\]/i);
-    if (tagMatch) {
-      tags = tagMatch[1].trim();
-      cleanContent = cleanContent.replace(/\[Etiket:\s*.*?\]/i, '').trim();
-    }
-    
-    // Title: Description split
-    let label = cleanContent;
-    const splitIndex = cleanContent.indexOf(':');
-    if (splitIndex !== -1 && splitIndex < 60) {
-      label = cleanContent.substring(0, splitIndex).trim();
-      description = cleanContent.substring(splitIndex + 1).trim();
-    }
-
-    const id = `temp-${currentId++}`;
-    nodes.push({ id, label, description, priority, tags, node_type: nodeType });
-    
-    while (stack.length > 0 && stack[stack.length - 1].level >= rawLevel) {
-      stack.pop();
-    }
-    
-    if (stack.length > 0) {
-      edges.push({
-        source_id: stack[stack.length - 1].id,
-        target_id: id,
-        edge_type: "depends_on"
-      });
-    }
-    
-    stack.push({ level: rawLevel, id });
   }
+
+  if (!parsedData || !parsedData.nodes || !parsedData.edges) {
+    throw new Error('JSON içerisinde "nodes" ve "edges" dizileri bulunamadı.');
+  }
+
+  const validTypes = ['startNode', 'endNode', 'milestoneNode', 'wikiNode', 'taskNode'];
+  const uniqueIds = new Set();
+  const duplicateWarnings = [];
   
+  const nodes = parsedData.nodes.map(n => {
+    // Defensive 2: Duplicate ID prevention
+    let safeId = n.id;
+    if (uniqueIds.has(safeId)) {
+      safeId = `${safeId}_copy_${Math.floor(Math.random() * 1000)}`;
+      duplicateWarnings.push(n.id);
+    }
+    uniqueIds.add(safeId);
+
+    // Defensive 3: Node type validation
+    let safeType = n.node_type;
+    if (!validTypes.includes(safeType)) {
+      safeType = 'taskNode'; // Fallback
+    }
+
+    return {
+      id: safeId,
+      label: n.label || 'İsimsiz Görev',
+      description: n.description || '',
+      priority: ['low', 'medium', 'high'].includes(n.priority) ? n.priority : 'medium',
+      tags: n.tags || '',
+      node_type: safeType
+    };
+  });
+
+  if (duplicateWarnings.length > 0) {
+    toast.warn(`Yapay zeka bazı ID'leri tekrar etmiş. Sistemi korumak için ${duplicateWarnings.length} ID onarıldı.`);
+  }
+
+  const edges = parsedData.edges.map(e => ({
+    source_id: e.source,
+    target_id: e.target,
+    edge_type: 'depends_on'
+  })).filter(e => uniqueIds.has(e.source_id) && uniqueIds.has(e.target_id));
+
   return { nodes, edges };
 };
 
@@ -156,12 +124,11 @@ const applyDagreLayout = (nodes, edges) => {
     const nodeWithPos = g.node(n.id);
     return {
       ...n,
-      position_x: nodeWithPos.x - 150,
-      position_y: nodeWithPos.y - 50
+      position_x: nodeWithPos ? nodeWithPos.x - 150 : 0,
+      position_y: nodeWithPos ? nodeWithPos.y - 50 : 0
     };
   });
 };
-
 
 export default function RoadmapImportModal({ isOpen, onClose, boardId }) {
   const [text, setText] = useState('');
@@ -180,20 +147,25 @@ export default function RoadmapImportModal({ isOpen, onClose, boardId }) {
   };
 
   const handleNext = () => {
-    const { nodes, edges } = parseMarkdown(text);
-    if (nodes.length === 0) {
-      toast.error('Geçerli bir Markdown listesi bulunamadı.');
-      return;
-    }
-    
-    if (nodes.length > 150) {
-      toast.error('V1 sürümü için maksimum 150 görev içe aktarabilirsiniz. Lütfen listenizi bölün.');
-      return;
-    }
+    try {
+      const { nodes, edges } = parseJSON(text);
+      
+      if (nodes.length === 0) {
+        toast.error('JSON içerisinde geçerli düğüm (node) bulunamadı.');
+        return;
+      }
+      
+      if (nodes.length > 250) {
+        toast.error('V1 sürümü için maksimum 250 görev içe aktarabilirsiniz. Lütfen listenizi bölün.');
+        return;
+      }
 
-    const layoutedNodes = applyDagreLayout(nodes, edges);
-    setPreviewData({ nodes: layoutedNodes, edges });
-    setStep(2);
+      const layoutedNodes = applyDagreLayout(nodes, edges);
+      setPreviewData({ nodes: layoutedNodes, edges });
+      setStep(2);
+    } catch (err) {
+      toast.error(err.message || 'Bir hata oluştu. Lütfen formatı kontrol edin.');
+    }
   };
 
   const handleImport = async () => {
@@ -230,7 +202,7 @@ export default function RoadmapImportModal({ isOpen, onClose, boardId }) {
           <div className="modal-header">
             <div className="modal-title" style={{display: 'flex', alignItems: 'center', gap: '8px'}}>
               <Wand2 size={20} style={{color: 'var(--accent-violet)'}} /> 
-              Sihirli Yol Haritası
+              Sihirli Yol Haritası (JSON)
             </div>
             <button onClick={onClose} className="btn-icon btn-ghost"><X size={20}/></button>
           </div>
@@ -239,7 +211,7 @@ export default function RoadmapImportModal({ isOpen, onClose, boardId }) {
             {step === 1 ? (
               <div style={{display: 'flex', flexDirection: 'column', gap: '16px'}}>
                 <p style={{fontSize: '13px', color: 'var(--text-primary)', lineHeight: '1.5'}}>
-                  ChatGPT, Claude veya Gemini'ye projenizi anlatıp <strong>kesin bir formatta</strong> yanıt almak için aşağıdaki komutu kullanın. Ardından size verdiği listeyi kopyalayıp aşağıdaki kutuya yapıştırın.
+                  ChatGPT, Claude veya Gemini'ye projenizi anlatıp <strong>kesin bir formatta</strong> yanıt almak için aşağıdaki komutu kullanın. Ardından size verdiği JSON listesini kopyalayıp aşağıdaki kutuya yapıştırın.
                 </p>
                 
                 <div style={{
@@ -296,7 +268,7 @@ export default function RoadmapImportModal({ isOpen, onClose, boardId }) {
                 </div>
 
                 <div style={{fontSize: '12px', fontWeight: 'bold', color: 'var(--text-primary)', marginTop: '8px'}}>
-                  LLM Çıktısını Buraya Yapıştırın:
+                  LLM'in Ürettiği JSON Kodunu Buraya Yapıştırın:
                 </div>
                 <textarea 
                   className="input"
@@ -309,7 +281,7 @@ export default function RoadmapImportModal({ isOpen, onClose, boardId }) {
                     color: 'var(--text-primary)',
                     border: '1px solid var(--border-default)',
                   }}
-                  placeholder="- Faz 1: Hazırlık&#10;  - Rakip Analizi&#10;- Faz 2: Tasarım..."
+                  placeholder='{&#10;  "nodes": [...],&#10;  "edges": [...]&#10;}'
                   value={text}
                   onChange={(e) => setText(e.target.value)}
                 />
