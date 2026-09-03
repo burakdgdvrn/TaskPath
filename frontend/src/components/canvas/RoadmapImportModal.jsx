@@ -6,39 +6,80 @@ import dagre from 'dagre';
 import { jsonrepair } from 'jsonrepair';
 import { apiImportRoadmap } from '../../services/api';
 
-const PROMPT_TEMPLATE = `Sen dünya çapında tecrübeli bir Senior Yazılım Mimarı ve Agile Proje Yöneticisisin. 
-Bize [PROJE KONUNUZU YAZIN] projesi için çok kapsamlı, gerçek hayat senaryosuna uygun bir yol haritası (roadmap) hazırla.
+const PROMPT_TEMPLATE = `Sen dünya çapında tecrübeli bir Senior Yazılım Mimarı ve Agile Proje Yöneticisisin.
+Bize [PROJE KONUSU] projesi için çok kapsamlı, gerçek hayat senaryosuna uygun bir yol haritası (roadmap) hazırla.
+Çıktın doğrudan sistemimiz tarafından okunup bir Directed Acyclic Graph (DAG) olarak çizilecek.
 
-SİSTEMİN ÇALIŞMA MANTIĞI:
-Bize çıktıyı KESİNLİKLE sadece aşağıdaki JSON şemasına uygun olarak vermelisin. Çıktın doğrudan sistemimiz tarafından okunup bir Directed Acyclic Graph (DAG) olarak çizilecek.
+ADIM 1 — ZİHNİNDE PLANLA (çıktıya yazma, sadece düşün):
+Önce projeyi 5-8 büyük FAZA ayır (örn: Analiz, Mimari, Backend, Frontend, Entegrasyon, Test, Yayın, Bakım).
+Her faz için: bu fazda hangi işler birbirinden BAĞIMSIZ (paralel yapılabilir) hangileri birbirine BAĞIMLI (sıralı) düşün.
+Ancak bu planlamayı sadece kendi içinde yap, nihai çıktı olarak SADECE JSON döndür.
 
-KURALLAR:
-1. En az 30-40 görevden oluşan çok kapsamlı bir plan çıkar. Güvenlik, test, veritabanı, frontend, backend, devops, dokümantasyon gibi detayları atlama.
-2. Paralel İş Akışı: Aynı anda yapılabilecek işleri (örneğin tasarım yapılırken veritabanı şemasının çizilmesi) paralel ilerlet. Bunun için "edges" kısmında bir hedeften birden fazla göreve ok çıkar ve sonraki fazda bunları tekrar tek bir hedefte (örneğin bir test veya entegrasyon noktası) birleştir.
-3. HÜCRE TÜRLERİ (node_type): Sadece şu 5 değerden birini kullan: "startNode", "milestoneNode", "wikiNode", "taskNode", "endNode".
-4. ÖNCELİK (priority): "low", "medium", "high"
-5. ID DEĞERLERİ: Her node için "id" kesinlikle benzersiz (unique) olmalıdır (örn: "n1", "n2", "task_db_1" vb.).
+İSKELET MANTIĞI (BUNU HER ZAMAN TAKİP ET):
+Roadmap şu tekrarlayan kalıpla ilerlemeli:
+[Start] -> [Milestone 1] -> (3-6 paralel taskNode) -> [Milestone 2] -> (3-6 paralel taskNode) -> [Milestone 3] -> ... -> [End]
+Yani her Milestone, kendinden önceki paralel görevlerin BİRLEŞTİĞİ (fan-in) ve kendinden sonraki yeni paralel görevlerin BAŞLADIĞI (fan-out) bir senkronizasyon noktasıdır. Milestone'dan milestone'a asla doğrudan tek bir çizgiyle atlama — aralarında mutlaka gerçek iş yapan taskNode'lar olsun.
 
-Örnek Şema:
+HÜCRE TÜRLERİ VE ANLAMLARI (her birini ne zaman kullanacağını öğren):
+- "startNode": Haritanın TEK başlangıç noktası. Sadece 1 tane, hiç gelen oku yok.
+- "milestoneNode": Bir fazın bittiği/yeni fazın başladığı dönüm noktası. Genellikle birden fazla görevi kendinde toplar (fan-in) ve birden fazla yeni görev başlatır (fan-out). Kendisi iş değil, senkronizasyon noktasıdır — 5-8 tane arasında olmalı.
+- "taskNode": Somut, uygulanabilir, tek bir kişi/ekip tarafından birkaç saat-birkaç gün içinde bitirilebilecek iş birimi. Roadmap'in ana gövdesi bunlardan oluşur.
+- "wikiNode": İş DEĞİLDİR — bir fazla ilgili kural, standart, referans bilgi veya teknik karar notudur (örn: "Renk paleti: #FF5733", "API rate limit: 100 req/dk"). Her fazda en az 1 tane wikiNode olmalı ki ekip önemli kararları unutmasın. wikiNode'un genelde tek bir gelen oku olur (bağlı olduğu fazdan), giden oku olmaz.
+- "endNode": Sürecin bittiği nokta(lar). Birden fazla bağımsız bitiş dalı varsa birden fazla endNode olabilir, ama her dal mutlaka bir endNode'da son bulmalı.
+
+SAYISAL KURALLAR:
+1. Toplam en az 30-40 "taskNode" üret (milestone/start/end/wiki bu sayıma dahil değil). Güvenlik, test, veritabanı, frontend, backend, devops, dokümantasyon alanlarını atlama.
+2. 5-8 arası "milestoneNode" olsun, her biri kendinden önceki paralel görevlerin fan-in noktası olsun.
+3. Her milestone'dan sonra en az 3, ideal 4-6 paralel taskNode açılsın (bağımsız iş varsa hepsini paralel göster, gereksiz yere zincirleme).
+4. Her fazda (milestone civarında) en az 1 wikiNode olsun.
+
+BAĞLANTI (edges) KURALLARI:
+- Paralel görevler: bir milestone'dan birden fazla task'a ok çıkar (fan-out).
+- Birleşme: o paralel task'ların HEPSİ bir sonraki milestone'a ok verir (fan-in) — hiçbiri atlanmasın.
+- DÖNGÜ (cycle) OLUŞTURMA — bir node asla, doğrudan ya da dolaylı olarak, kendine geri dönen bir yol üzerinde olmamalı.
+- YETİM NODE bırakma — startNode hariç her node'un en az 1 gelen oku, endNode hariç her node'un en az 1 giden oku olmalı.
+
+ALAN (field) KURALLARI:
+- "id": kesinlikle benzersiz, kısa, anlamlı (örn: "task_db_schema", "m_faz2"). Asla boş bırakma.
+- "label": kısa başlık (3-6 kelime). Asla boş bırakma.
+- "description": 1 cümlelik somut açıklama. Asla boş string ("") bırakma — bilgi yoksa bile label'ı biraz açan bir cümle yaz.
+- "priority": "low" | "medium" | "high" — milestoneNode'lar genelde "high" olmalı.
+- "tags": tek kelimelik kategori (örn: "Backend", "Frontend", "DevOps", "Güvenlik", "Test", "Dokümantasyon"). Asla boş bırakma.
+
+Örnek Şema (BU MANTIĞI TAKİP ET — paralel + birleşme + wikiNode dahil):
 \`\`\`json
 {
   "nodes": [
-    { "id": "start", "label": "Proje Başlangıcı", "node_type": "startNode", "priority": "high", "description": "Gereksinimlerin toplanması", "tags": "Analiz" },
-    { "id": "m1", "label": "Faz 1: Mimari", "node_type": "milestoneNode", "priority": "high", "description": "", "tags": "" },
-    { "id": "t1", "label": "Veritabanı Tasarımı", "node_type": "taskNode", "priority": "medium", "description": "Tabloların oluşturulması", "tags": "Backend" },
-    { "id": "t2", "label": "UI/UX Tasarımı", "node_type": "taskNode", "priority": "medium", "description": "Figma ekranları", "tags": "Tasarım" },
-    { "id": "m2", "label": "Faz 2: Geliştirme", "node_type": "milestoneNode", "priority": "high", "description": "", "tags": "" }
+    { "id": "start", "label": "Proje Başlangıcı", "node_type": "startNode", "priority": "high", "description": "Gereksinimlerin toplanması ve proje kapsamının netleştirilmesi", "tags": "Analiz" },
+    { "id": "m1", "label": "Faz 1: Mimari Tamamlandı", "node_type": "milestoneNode", "priority": "high", "description": "Mimari ve tasarım kararlarının onaylandığı senkronizasyon noktası", "tags": "Mimari" },
+    { "id": "wiki_arch", "label": "Mimari Kararlar", "node_type": "wikiNode", "priority": "medium", "description": "Kullanılacak teknoloji yığını ve mimari desenler", "tags": "Referans" },
+    { "id": "t_db", "label": "Veritabanı Şema Tasarımı", "node_type": "taskNode", "priority": "high", "description": "Tabloların ve ilişkilerin ER diyagramının çizilmesi", "tags": "Backend" },
+    { "id": "t_ui", "label": "UI/UX Tasarımı", "node_type": "taskNode", "priority": "medium", "description": "Figma üzerinde ekran akışlarının hazırlanması", "tags": "Tasarım" },
+    { "id": "t_api_spec", "label": "API Sözleşmesi Tasarımı", "node_type": "taskNode", "priority": "medium", "description": "Endpoint'lerin ve request/response şemalarının tanımlanması", "tags": "Backend" },
+    { "id": "m2", "label": "Faz 2: Geliştirmeye Hazır", "node_type": "milestoneNode", "priority": "high", "description": "Tüm tasarım çıktılarının onaylanıp geliştirmeye geçildiği nokta", "tags": "Geliştirme" }
   ],
   "edges": [
     { "source": "start", "target": "m1" },
-    { "source": "m1", "target": "t1" },
-    { "source": "m1", "target": "t2" },
-    { "source": "t1", "target": "m2" },
-    { "source": "t2", "target": "m2" }
+    { "source": "m1", "target": "wiki_arch" },
+    { "source": "m1", "target": "t_db" },
+    { "source": "m1", "target": "t_ui" },
+    { "source": "m1", "target": "t_api_spec" },
+    { "source": "t_db", "target": "m2" },
+    { "source": "t_ui", "target": "m2" },
+    { "source": "t_api_spec", "target": "m2" }
   ]
 }
 \`\`\`
-Sadece \`\`\`json ... \`\`\` bloğunu döndür. Başka bir açıklama yapma.`;
+
+SON KONTROL (JSON'u vermeden önce kendine sor):
+- Toplam taskNode sayım 30-40'ın üzerinde mi?
+- Her milestone gerçekten bir fan-in + fan-out noktası mı, yoksa tek zincir mi oldu?
+- Her fazda en az 1 wikiNode var mı?
+- Herhangi bir node yetim mi kaldı (hiç oku yok)?
+- Döngü oluşturan bir bağlantı var mı?
+- Her node'un description ve tags alanı dolu mu?
+
+Sadece \`\`\`json ... \`\`\` bloğunu döndür. Başka hiçbir açıklama, önsöz veya sonsöz yazma.`;
 
 const parseJSON = (text) => {
   // Extract JSON block using Regex
