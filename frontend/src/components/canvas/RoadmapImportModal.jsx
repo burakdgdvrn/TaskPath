@@ -365,11 +365,15 @@ export default function RoadmapImportModal({ isOpen, onClose, boardId }) {
                       <div style={{ flex: 1 }}>
                         <label style={{ display: 'block', fontSize: '12px', color: 'var(--text-muted)', marginBottom: '4px' }}>Görev Sayısı (Opsiyonel)</label>
                         <input 
-                          type="number" 
+                          type="text" 
                           className="input" 
                           placeholder="Örn: 25"
                           value={nodeCount}
-                          onChange={(e) => setNodeCount(e.target.value)}
+                          onChange={(e) => {
+                            const val = e.target.value.replace(/[^0-9]/g, '');
+                            if (val === '0') return;
+                            setNodeCount(val);
+                          }}
                         />
                       </div>
                     </div>
