@@ -7,26 +7,26 @@ const SLIDES = [
   {
     id: 'welcome',
     icon: <Map size={48} className="text-emerald-400" />,
-    title: 'TaskPath\'e Hoş Geldiniz',
-    desc: 'Projelerinizi basit listelerden kurtarıp, görsel, dinamik ve akıllı yol haritalarına dönüştürmeye hazır mısınız? TaskPath hem bilgisayarınızda hem de mobil cihazınızda kusursuz çalışır.'
+    title: 'Vizyona Hoş Geldiniz',
+    desc: 'TaskPath, projelerinizi karmaşık listelerden kurtararak görsel ve dinamik bir yol haritasına (DAG) dönüştürür. Bilgisayarınızda ve mobil cihazlarınızda kesintisiz, profesyonel bir proje yönetim deneyimine hazır olun.'
   },
   {
     id: 'drawing',
     icon: <GitBranch size={48} className="text-violet-400" />,
-    title: 'Hücreler & Çizim',
-    desc: 'Haritanız [Start] hücresiyle başlar, [Milestone] ile fazlara bölünür, [Wiki] ile notlandırılır ve [End] ile biter. Mobilde düğümlere (noktalara) dokunup diğer hücreye sürükleyerek (veya ardışık dokunarak) bağlayabilirsiniz.'
+    title: 'Esnek Mimari ve Bağlantılar',
+    desc: 'Haritanızı [Başlangıç] düğümleriyle başlatıp, [Milestone] ile fazlara ayırın ve [Görev] düğümleriyle detaylandırın. Masaüstü veya mobilde, düğümlerin kenarlarındaki bağlantı noktalarını (handle) birbirine sürükleyerek bağımlılıkları kolayca oluşturabilirsiniz.'
   },
   {
     id: 'ai',
     icon: <Sparkles size={48} className="text-amber-400" />,
-    title: 'Yapay Zeka (Sihirli Asa)',
-    desc: 'Uzun uzun çizmek istemiyor musunuz? Sol üstteki "Sihirli Asa" butonuna tıklayın, aklınızdaki projeyi (örn: E-Ticaret sitesi yapmak istiyorum) yazın ve saniyeler içinde devasa bir harita otomatik oluşsun.'
+    title: 'Yapay Zeka Destekli Planlama',
+    desc: 'Büyük projeleri sıfırdan çizmek yerine "Sihirli Asa" aracımızı kullanın. Akıllı sihirbazımız, projenize en uygun komutu (Prompt) üretir. Bu komutu favori yapay zekanıza (ChatGPT, Claude) verin ve ürettiği şemayı sistemimize yapıştırarak haritanızı anında inşa edin.'
   },
   {
     id: 'team',
     icon: <MessageCircle size={48} className="text-blue-400" />,
-    title: 'Ekip & İletişim',
-    desc: 'Mobilde veya PC\'de sol üstteki menüden tüm sohbetlerinize ulaşabilir, sağ panele tıklayarak seçtiğiniz görev hakkında anında mesajlaşabilirsiniz. İyi eğlenceler!'
+    title: 'Gelişmiş Ekip İletişimi',
+    desc: 'TaskPath, merkezi bir iletişim platformudur. İsterseniz bir görevin içine girip sadece o göreve özel tartışmalar başlatabilir, isterseniz de sol menü üzerinden ekibinizle anlık mesajlaşabilirsiniz.'
   }
 ];
 

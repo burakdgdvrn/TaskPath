@@ -1,88 +1,108 @@
-import React, { useState } from 'react';
-import { X, Wand2, ArrowRight, Copy, Check } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { X, Wand2, ArrowRight, Copy, Check, Terminal, LayoutList } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import toast from 'react-hot-toast';
 import dagre from 'dagre';
 import { jsonrepair } from 'jsonrepair';
 import { apiImportRoadmap } from '../../services/api';
 
-const PROMPT_TEMPLATE = `Sen dünya çapında tecrübeli bir Senior Yazılım Mimarı ve Agile Proje Yöneticisisin.
-Bize [PROJE KONUSU] projesi için çok kapsamlı, gerçek hayat senaryosuna uygun bir yol haritası (roadmap) hazırla.
+const generatePrompt = (topic, description, teamSize, level, nodeCount) => {
+  const levelHint = {
+    'Özet': 'Sadece ana fazları ve çok kritik görevleri içeren, yüksek seviyeli (high-level) bir özet harita çıkar.',
+    'Standart': 'Geliştirme sürecini tüm ana hatlarıyla kapsayan standart bir plan oluştur. Ne çok yüzeysel ne de gereksiz yere boğucu olsun.',
+    'Kapsamlı': 'Projeyi en ince ayrıntısına kadar planla. Ancak bunu yaparken görev kotası doldurmak için ASLA anlamsız, saçma veya yapay görevler uydurma. Sadece gerçekten yapılması gereken işleri detaylandır.'
+  }[level] || 'Geliştirme sürecini tüm ana hatlarıyla kapsayan standart bir plan oluştur.';
+
+  const teamHint = {
+    'Solo (1 Kişi)': 'Bu projeyi tek bir kişi yapacak. Bu yüzden aynı anda çok fazla paralel görev (fan-out) açma. Harita daha çok sıralı (zincir) ilerlemeli.',
+    'Küçük Ekip (2-3)': 'Bu projeyi 2-3 kişilik küçük bir ekip yapacak. Görevleri bu ekibin paralel çalışabileceği şekilde 2-3 koldan ilerlet.',
+    'Büyük Ekip (4+)': 'Bu projeyi büyük bir ekip yapacak. Frontend, Backend, Tasarım gibi disiplinler tamamen bağımsız (ayrı startNode\'lar ile) başlayabilir. Ekipleri sadece kritik milestone\'larda birleştir.'
+  }[teamSize] || 'Bu projeyi 2-3 kişilik küçük bir ekip yapacak.';
+
+  const countInstruction = nodeCount && nodeCount.trim()
+    ? `- İSTENEN GÖREV SAYISI: Kullanıcı özellikle toplam ${nodeCount} civarında görev (taskNode) üretmeni istiyor. Lütfen plana sağdık kalırken bu hedefe olabildiğince yaklaş.`
+    : `- İSTENEN GÖREV SAYISI: Sayısal bir limitin yok, projenin kapsamı neyi gerektiriyorsa o büyüklükte bir akış kur.`;
+
+  return `Sen dünya çapında tecrübeli bir Senior Yazılım Mimarı ve Agile Proje Yöneticisisin.
+Bize "${topic || '[PROJE ADINI GİRİN]'}" projesi için gerçek hayat senaryosuna uygun bir yol haritası (roadmap) hazırla.
+${description ? `PROJE DETAYLARI: ${description}` : ''}
 Çıktın doğrudan sistemimiz tarafından okunup bir Directed Acyclic Graph (DAG) olarak çizilecek.
 
-ADIM 1 — ZİHNİNDE PLANLA (çıktıya yazma, sadece düşün):
-Önce projeyi 5-8 büyük FAZA ayır (örn: Analiz, Mimari, Backend, Frontend, Entegrasyon, Test, Yayın, Bakım).
-Her faz için: bu fazda hangi işler birbirinden BAĞIMSIZ (paralel yapılabilir) hangileri birbirine BAĞIMLI (sıralı) düşün.
-Ancak bu planlamayı sadece kendi içinde yap, nihai çıktı olarak SADECE JSON döndür.
+MİMARİ VE EKİP BİLGİSİ (Planı Buna Göre Yap):
+- DETAY SEVİYESİ: ${levelHint}
+- EKİP BÜYÜKLÜĞÜ: ${teamHint}
+${countInstruction}
 
-İSKELET MANTIĞI (BUNU HER ZAMAN TAKİP ET):
-Roadmap şu tekrarlayan kalıpla ilerlemeli:
-[Start] -> [Milestone 1] -> (3-6 paralel taskNode) -> [Milestone 2] -> (3-6 paralel taskNode) -> [Milestone 3] -> ... -> [End]
-Yani her Milestone, kendinden önceki paralel görevlerin BİRLEŞTİĞİ (fan-in) ve kendinden sonraki yeni paralel görevlerin BAŞLADIĞI (fan-out) bir senkronizasyon noktasıdır. Milestone'dan milestone'a asla doğrudan tek bir çizgiyle atlama — aralarında mutlaka gerçek iş yapan taskNode'lar olsun.
+ADIM 1 — ZİHNİNDE PLANLA (Çıktıya yazma):
+Projenin doğasına ve ekip büyüklüğüne göre işleri nasıl böleceğini düşün. Kimler aynı anda çalışabilir? Hangi işler birbirini beklemek zorunda? İstenen görev sayısına dikkat ederek mantıklı bir akış kur ve nihai çıktıyı SADECE JSON formatında döndür.
 
-HÜCRE TÜRLERİ VE ANLAMLARI (her birini ne zaman kullanacağını öğren):
-- "startNode": Haritanın TEK başlangıç noktası. Sadece 1 tane, hiç gelen oku yok.
-- "milestoneNode": Bir fazın bittiği/yeni fazın başladığı dönüm noktası. Genellikle birden fazla görevi kendinde toplar (fan-in) ve birden fazla yeni görev başlatır (fan-out). Kendisi iş değil, senkronizasyon noktasıdır — 5-8 tane arasında olmalı.
-- "taskNode": Somut, uygulanabilir, tek bir kişi/ekip tarafından birkaç saat-birkaç gün içinde bitirilebilecek iş birimi. Roadmap'in ana gövdesi bunlardan oluşur.
-- "wikiNode": İş DEĞİLDİR — bir fazla ilgili kural, standart, referans bilgi veya teknik karar notudur (örn: "Renk paleti: #FF5733", "API rate limit: 100 req/dk"). Her fazda en az 1 tane wikiNode olmalı ki ekip önemli kararları unutmasın. wikiNode'un genelde tek bir gelen oku olur (bağlı olduğu fazdan), giden oku olmaz.
-- "endNode": Sürecin bittiği nokta(lar). Birden fazla bağımsız bitiş dalı varsa birden fazla endNode olabilir, ama her dal mutlaka bir endNode'da son bulmalı.
+HÜCRE TÜRLERİ VE ANLAMLARI:
+- "startNode": Haritanın başlangıç noktası. Ekip büyüklüğüne göre tek bir başlangıç da olabilir, birbirinden tamamen bağımsız ekipler varsa birden fazla startNode da olabilir.
+- "milestoneNode": Paralel işlerin bittiği veya yeni fazların başladığı önemli senkronizasyon noktaları. Nereye koyacağına sen karar ver.
+- "taskNode": Somut, uygulanabilir, tek bir iş birimi.
+- "wikiNode": İş DEĞİLDİR — teknik kural, referans bilgi veya karar notudur. Giden oku (hedefi) olmaz.
+- "endNode": Sürecin bittiği nokta(lar).
 
-SAYISAL KURALLAR:
-1. Toplam en az 30-40 "taskNode" üret (milestone/start/end/wiki bu sayıma dahil değil). Güvenlik, test, veritabanı, frontend, backend, devops, dokümantasyon alanlarını atlama.
-2. 5-8 arası "milestoneNode" olsun, her biri kendinden önceki paralel görevlerin fan-in noktası olsun.
-3. Her milestone'dan sonra en az 3, ideal 4-6 paralel taskNode açılsın (bağımsız iş varsa hepsini paralel göster, gereksiz yere zincirleme).
-4. Her fazda (milestone civarında) en az 1 wikiNode olsun.
+GRAF KURALLARI VE ALANLAR (Bu formatı birebir koru):
+- "id": kesinlikle benzersiz (unique) olmalı.
+- "label": kısa başlık.
+- "description": 1 cümlelik açıklama.
+- "tags": tek kelimelik kategori.
+- "priority": "low" | "medium" | "high".
+- "node_type": "startNode", "milestoneNode", "taskNode", "wikiNode", "endNode" değerlerinden biri.
 
-BAĞLANTI (edges) KURALLARI:
-- Paralel görevler: bir milestone'dan birden fazla task'a ok çıkar (fan-out).
-- Birleşme: o paralel task'ların HEPSİ bir sonraki milestone'a ok verir (fan-in) — hiçbiri atlanmasın.
-- DÖNGÜ (cycle) OLUŞTURMA — bir node asla, doğrudan ya da dolaylı olarak, kendine geri dönen bir yol üzerinde olmamalı.
-- YETİM NODE bırakma — startNode hariç her node'un en az 1 gelen oku, endNode hariç her node'un en az 1 giden oku olmalı.
-
-ALAN (field) KURALLARI:
-- "id": kesinlikle benzersiz, kısa, anlamlı (örn: "task_db_schema", "m_faz2"). Asla boş bırakma.
-- "label": kısa başlık (3-6 kelime). Asla boş bırakma.
-- "description": 1 cümlelik somut açıklama. Asla boş string ("") bırakma — bilgi yoksa bile label'ı biraz açan bir cümle yaz.
-- "priority": "low" | "medium" | "high" — milestoneNode'lar genelde "high" olmalı.
-- "tags": tek kelimelik kategori (örn: "Backend", "Frontend", "DevOps", "Güvenlik", "Test", "Dokümantasyon"). Asla boş bırakma.
-
-Örnek Şema (BU MANTIĞI TAKİP ET — paralel + birleşme + wikiNode dahil):
+ÖRNEK ÇIKTI FORMATI:
 \`\`\`json
 {
   "nodes": [
-    { "id": "start", "label": "Proje Başlangıcı", "node_type": "startNode", "priority": "high", "description": "Gereksinimlerin toplanması ve proje kapsamının netleştirilmesi", "tags": "Analiz" },
-    { "id": "m1", "label": "Faz 1: Mimari Tamamlandı", "node_type": "milestoneNode", "priority": "high", "description": "Mimari ve tasarım kararlarının onaylandığı senkronizasyon noktası", "tags": "Mimari" },
-    { "id": "wiki_arch", "label": "Mimari Kararlar", "node_type": "wikiNode", "priority": "medium", "description": "Kullanılacak teknoloji yığını ve mimari desenler", "tags": "Referans" },
-    { "id": "t_db", "label": "Veritabanı Şema Tasarımı", "node_type": "taskNode", "priority": "high", "description": "Tabloların ve ilişkilerin ER diyagramının çizilmesi", "tags": "Backend" },
-    { "id": "t_ui", "label": "UI/UX Tasarımı", "node_type": "taskNode", "priority": "medium", "description": "Figma üzerinde ekran akışlarının hazırlanması", "tags": "Tasarım" },
-    { "id": "t_api_spec", "label": "API Sözleşmesi Tasarımı", "node_type": "taskNode", "priority": "medium", "description": "Endpoint'lerin ve request/response şemalarının tanımlanması", "tags": "Backend" },
-    { "id": "m2", "label": "Faz 2: Geliştirmeye Hazır", "node_type": "milestoneNode", "priority": "high", "description": "Tüm tasarım çıktılarının onaylanıp geliştirmeye geçildiği nokta", "tags": "Geliştirme" }
+    { "id": "n1", "label": "Proje Başlangıcı", "description": "Gereksinim analizi", "tags": "Analiz", "priority": "high", "node_type": "startNode" }
   ],
   "edges": [
-    { "source": "start", "target": "m1" },
-    { "source": "m1", "target": "wiki_arch" },
-    { "source": "m1", "target": "t_db" },
-    { "source": "m1", "target": "t_ui" },
-    { "source": "m1", "target": "t_api_spec" },
-    { "source": "t_db", "target": "m2" },
-    { "source": "t_ui", "target": "m2" },
-    { "source": "t_api_spec", "target": "m2" }
+    { "source": "n1", "target": "n2" }
+  ]
+}
+\`\`\`
+Sadece \`\`\`json ... \`\`\` bloğunu döndür. Başka hiçbir açıklama, önsöz veya sonsöz yazma.`;
+};
+
+const generateSystemPrompt = () => {
+  return `AŞAĞIDAKİ KURALLAR, BENİM KULLANDIĞIM YOL HARİTASI (DAG) SİSTEMİNİN ZORUNLU JSON ŞEMASIDIR:
+
+1. HÜCRE TÜRLERİ (node_type): 
+- "startNode": Başlangıç noktası
+- "milestoneNode": Senkronizasyon (fan-in/fan-out) noktası
+- "wikiNode": Karar/Not düğümü (İş değildir, giden oku olmaz)
+- "taskNode": Uygulanabilir iş birimi
+- "endNode": Bitiş noktası
+
+2. ZORUNLU ALANLAR: 
+- "id": Kesinlikle benzersiz (unique)
+- "label": Kısa başlık
+- "description": 1 cümlelik açıklama
+- "tags": Tek kelimelik kategori
+- "priority": "low" | "medium" | "high"
+- "node_type": Yukarıdaki 5 türden biri
+
+3. GRAF KURALLARI: 
+- Döngü (cycle) yaratılamaz.
+- Yetim düğüm (hiç oku olmayan) bırakılamaz.
+
+ÖRNEK JSON ÇIKTISI:
+\`\`\`json
+{
+  "nodes": [
+    { "id": "n1", "label": "Başlangıç", "description": "Hazırlık", "tags": "Analiz", "priority": "high", "node_type": "startNode" }
+  ],
+  "edges": [
+    { "source": "n1", "target": "n2" }
   ]
 }
 \`\`\`
 
-SON KONTROL (JSON'u vermeden önce kendine sor):
-- Toplam taskNode sayım 30-40'ın üzerinde mi?
-- Her milestone gerçekten bir fan-in + fan-out noktası mı, yoksa tek zincir mi oldu?
-- Her fazda en az 1 wikiNode var mı?
-- Herhangi bir node yetim mi kaldı (hiç oku yok)?
-- Döngü oluşturan bir bağlantı var mı?
-- Her node'un description ve tags alanı dolu mu?
-
-Sadece \`\`\`json ... \`\`\` bloğunu döndür. Başka hiçbir açıklama, önsöz veya sonsöz yazma.`;
+BU AŞAMADAN SONRA SANA VERECEĞİM TÜM GÖREVLERİ VEYA PROJELERİ SADECE YUKARIDAKİ JSON ŞEMASINA UYGUN OLARAK DÖNDÜR.`;
+};
 
 const parseJSON = (text) => {
-  // Extract JSON block using Regex
   const jsonMatch = text.match(/```(?:json)?\s*([\s\S]*?)\s*```/);
   let rawJson = jsonMatch ? jsonMatch[1] : text;
 
@@ -91,7 +111,6 @@ const parseJSON = (text) => {
     parsedData = JSON.parse(rawJson);
   } catch (err) {
     try {
-      // Defensive 1: jsonrepair integration
       const repaired = jsonrepair(rawJson);
       parsedData = JSON.parse(repaired);
     } catch (repairErr) {
@@ -108,7 +127,6 @@ const parseJSON = (text) => {
   const duplicateWarnings = [];
   
   const nodes = parsedData.nodes.map(n => {
-    // Defensive 2: Duplicate ID prevention
     let safeId = n.id;
     if (uniqueIds.has(safeId)) {
       safeId = `${safeId}_copy_${Math.floor(Math.random() * 1000)}`;
@@ -116,18 +134,17 @@ const parseJSON = (text) => {
     }
     uniqueIds.add(safeId);
 
-    // Defensive 3: Node type validation
-    let safeType = n.node_type;
+    let safeType = n.node_type || n.type || n.nodeType;
     if (!validTypes.includes(safeType)) {
-      safeType = 'taskNode'; // Fallback
+      safeType = 'taskNode';
     }
 
     return {
       id: safeId,
-      label: n.label || 'İsimsiz Görev',
-      description: n.description || '',
+      label: n.label || n.title || n.name || n.text || 'İsimsiz Görev',
+      description: n.description || n.desc || n.detail || '',
       priority: ['low', 'medium', 'high'].includes(n.priority) ? n.priority : 'medium',
-      tags: n.tags || '',
+      tags: n.tags || n.tag || n.category || '',
       node_type: safeType
     };
   });
@@ -147,7 +164,6 @@ const parseJSON = (text) => {
 
 const applyDagreLayout = (nodes, edges) => {
   const g = new dagre.graphlib.Graph();
-  // LR means Left-to-Right (Horizontal tree)
   g.setGraph({ rankdir: 'LR', nodesep: 50, ranksep: 200 });
   g.setDefaultEdgeLabel(() => ({}));
   
@@ -172,16 +188,40 @@ const applyDagreLayout = (nodes, edges) => {
 };
 
 export default function RoadmapImportModal({ isOpen, onClose, boardId }) {
-  const [text, setText] = useState('');
-  const [step, setStep] = useState(1); // 1: Input, 2: Preview
+  const [step, setStep] = useState(1);
+  const [mode, setMode] = useState('wizard'); // 'wizard' | 'advanced'
   const [previewData, setPreviewData] = useState({ nodes: [], edges: [] });
   const [isImporting, setIsImporting] = useState(false);
   const [copied, setCopied] = useState(false);
 
+  // Form States
+  const [topic, setTopic] = useState('');
+  const [description, setDescription] = useState('');
+  const [teamSize, setTeamSize] = useState('Küçük Ekip (2-3)');
+  const [level, setLevel] = useState('Standart');
+  const [nodeCount, setNodeCount] = useState('');
+  
+  // Computed Prompt
+  const [generatedPrompt, setGeneratedPrompt] = useState('');
+  // Output JSON Text
+  const [text, setText] = useState('');
+
+  useEffect(() => {
+    if (mode === 'wizard') {
+      setGeneratedPrompt(generatePrompt(topic, description, teamSize, level, nodeCount));
+    } else {
+      setGeneratedPrompt(generateSystemPrompt());
+    }
+  }, [topic, description, teamSize, level, nodeCount, mode]);
+
   if (!isOpen) return null;
 
   const handleCopy = () => {
-    navigator.clipboard.writeText(PROMPT_TEMPLATE);
+    if (mode === 'wizard' && !topic.trim()) {
+      toast.error('Lütfen önce bir proje adı girin.');
+      return;
+    }
+    navigator.clipboard.writeText(generatedPrompt);
     setCopied(true);
     toast.success('Komut kopyalandı!');
     setTimeout(() => setCopied(false), 2000);
@@ -218,6 +258,9 @@ export default function RoadmapImportModal({ isOpen, onClose, boardId }) {
       });
       toast.success('Yol haritası başarıyla içe aktarıldı!');
       setText('');
+      setTopic('');
+      setDescription('');
+      setNodeCount('');
       setStep(1);
       onClose();
     } catch (err) {
@@ -238,94 +281,190 @@ export default function RoadmapImportModal({ isOpen, onClose, boardId }) {
           initial={{ y: 20, opacity: 0, scale: 0.95 }}
           animate={{ y: 0, opacity: 1, scale: 1 }}
           exit={{ y: 20, opacity: 0, scale: 0.95 }}
-          style={{ maxWidth: '600px', width: '90%' }}
+          style={{ maxWidth: '700px', width: '90%', maxHeight: '90vh', display: 'flex', flexDirection: 'column' }}
         >
-          <div className="modal-header">
-            <div className="modal-title" style={{display: 'flex', alignItems: 'center', gap: '8px'}}>
-              <Wand2 size={20} style={{color: 'var(--accent-violet)'}} /> 
-              Sihirli Yol Haritası (JSON)
+          <div className="modal-header" style={{flexDirection: 'column', alignItems: 'stretch', gap: '16px'}}>
+            <div style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center'}}>
+              <div className="modal-title" style={{display: 'flex', alignItems: 'center', gap: '8px'}}>
+                <Wand2 size={20} style={{color: 'var(--accent-violet)'}} /> 
+                Sihirli Yol Haritası (JSON)
+              </div>
+              <button onClick={onClose} className="btn-icon btn-ghost"><X size={20}/></button>
             </div>
-            <button onClick={onClose} className="btn-icon btn-ghost"><X size={20}/></button>
+
+            {/* TABS */}
+            {step === 1 && (
+              <div style={{display: 'flex', gap: '8px', background: 'var(--bg-tertiary)', padding: '4px', borderRadius: '8px', border: '1px solid var(--border-default)'}}>
+                <button 
+                  onClick={() => setMode('wizard')}
+                  style={{
+                    flex: 1, padding: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px',
+                    background: mode === 'wizard' ? 'var(--bg-primary)' : 'transparent',
+                    border: mode === 'wizard' ? '1px solid var(--border-default)' : '1px solid transparent',
+                    borderRadius: '6px', cursor: 'pointer', color: mode === 'wizard' ? 'var(--text-primary)' : 'var(--text-muted)',
+                    fontWeight: mode === 'wizard' ? '600' : '400',
+                    transition: 'all 0.2s ease', boxShadow: mode === 'wizard' ? '0 1px 3px rgba(0,0,0,0.1)' : 'none'
+                  }}
+                >
+                  <LayoutList size={16}/> Sihirbaz Modu
+                </button>
+                <button 
+                  onClick={() => setMode('advanced')}
+                  style={{
+                    flex: 1, padding: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px',
+                    background: mode === 'advanced' ? 'var(--bg-primary)' : 'transparent',
+                    border: mode === 'advanced' ? '1px solid var(--border-default)' : '1px solid transparent',
+                    borderRadius: '6px', cursor: 'pointer', color: mode === 'advanced' ? 'var(--text-primary)' : 'var(--text-muted)',
+                    fontWeight: mode === 'advanced' ? '600' : '400',
+                    transition: 'all 0.2s ease', boxShadow: mode === 'advanced' ? '0 1px 3px rgba(0,0,0,0.1)' : 'none'
+                  }}
+                >
+                  <Terminal size={16}/> Gelişmiş Mod
+                </button>
+              </div>
+            )}
           </div>
 
-          <div className="modal-body">
+          <div className="modal-body" style={{ flex: 1, overflowY: 'auto', padding: '20px' }}>
             {step === 1 ? (
-              <div style={{display: 'flex', flexDirection: 'column', gap: '16px'}}>
-                <p style={{fontSize: '13px', color: 'var(--text-primary)', lineHeight: '1.5'}}>
-                  ChatGPT, Claude veya Gemini'ye projenizi anlatıp <strong>kesin bir formatta</strong> yanıt almak için aşağıdaki komutu kullanın. Ardından size verdiği JSON listesini kopyalayıp aşağıdaki kutuya yapıştırın.
-                </p>
+              <div style={{display: 'flex', flexDirection: 'column', gap: '20px'}}>
                 
-                <div style={{
-                  background: '#1e1e1e', // Her zaman koyu tema kod bloğu görünümü
-                  border: '1px solid #333',
-                  borderRadius: '8px', 
-                  overflow: 'hidden',
-                  boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)'
-                }}>
-                  <div style={{
-                    display: 'flex', 
-                    justifyContent: 'space-between', 
-                    alignItems: 'center', 
-                    padding: '8px 12px',
-                    background: '#2d2d2d',
-                    borderBottom: '1px solid #444'
-                  }}>
-                    <div style={{fontSize: '11px', color: '#a3a3a3', fontWeight: '600', letterSpacing: '0.5px'}}>
-                      LLM PROMPT (KOPYALA)
+                {/* WIZARD FORM SECTION */}
+                {mode === 'wizard' && (
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '16px', background: 'var(--bg-tertiary)', padding: '16px', borderRadius: '8px', border: '1px solid var(--border-default)' }}>
+                    <div style={{ fontSize: '14px', fontWeight: 'bold', color: 'var(--text-primary)' }}>1. Proje Detaylarını Girin</div>
+                    
+                    <div>
+                      <label style={{ display: 'block', fontSize: '12px', color: 'var(--text-muted)', marginBottom: '4px' }}>Proje Adı *</label>
+                      <input 
+                        type="text" 
+                        className="input" 
+                        placeholder="Örn: Uber benzeri mobil uygulama"
+                        value={topic}
+                        onChange={(e) => setTopic(e.target.value)}
+                      />
                     </div>
-                    <button 
-                      onClick={handleCopy}
-                      style={{
-                        background: 'transparent', border: 'none', cursor: 'pointer',
-                        display: 'flex', alignItems: 'center', gap: '4px',
-                        color: copied ? '#4ade80' : '#d4d4d8', fontSize: '12px',
-                        padding: '4px 8px', borderRadius: '4px',
-                        transition: 'all 0.2s ease'
-                      }}
-                      onMouseEnter={(e) => e.currentTarget.style.background = '#3f3f46'}
-                      onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
-                    >
-                      {copied ? <Check size={14}/> : <Copy size={14}/>}
-                      {copied ? 'Kopyalandı' : 'Kopyala'}
-                    </button>
+
+                    <div style={{ display: 'flex', gap: '16px' }}>
+                      <div style={{ flex: 1 }}>
+                        <label style={{ display: 'block', fontSize: '12px', color: 'var(--text-muted)', marginBottom: '4px' }}>Ekip Büyüklüğü</label>
+                        <select className="input" value={teamSize} onChange={(e) => setTeamSize(e.target.value)}>
+                          <option value="Solo (1 Kişi)">Solo (1 Kişi)</option>
+                          <option value="Küçük Ekip (2-3)">Küçük Ekip (2-3)</option>
+                          <option value="Büyük Ekip (4+)">Büyük Ekip (4+)</option>
+                        </select>
+                      </div>
+                      <div style={{ flex: 1 }}>
+                        <label style={{ display: 'block', fontSize: '12px', color: 'var(--text-muted)', marginBottom: '4px' }}>Detay Seviyesi</label>
+                        <select className="input" value={level} onChange={(e) => setLevel(e.target.value)}>
+                          <option value="Özet">Özet</option>
+                          <option value="Standart">Standart</option>
+                          <option value="Kapsamlı">Kapsamlı</option>
+                        </select>
+                      </div>
+                      <div style={{ flex: 1 }}>
+                        <label style={{ display: 'block', fontSize: '12px', color: 'var(--text-muted)', marginBottom: '4px' }}>Görev Sayısı (Opsiyonel)</label>
+                        <input 
+                          type="number" 
+                          className="input" 
+                          placeholder="Örn: 25"
+                          value={nodeCount}
+                          onChange={(e) => setNodeCount(e.target.value)}
+                        />
+                      </div>
+                    </div>
+
+                    <div>
+                      <label style={{ display: 'block', fontSize: '12px', color: 'var(--text-muted)', marginBottom: '4px' }}>Ekstra Notlar (Opsiyonel)</label>
+                      <textarea 
+                        className="input" 
+                        placeholder="Kullanılacak teknolojiler, özel istekler, modüller..."
+                        value={description}
+                        onChange={(e) => setDescription(e.target.value)}
+                        style={{ minHeight: '60px', resize: 'vertical' }}
+                      />
+                    </div>
                   </div>
+                )}
+
+                {/* ADVANCED MODE INFO */}
+                {mode === 'advanced' && (
+                  <div style={{ background: 'rgba(56, 189, 248, 0.1)', border: '1px solid rgba(56, 189, 248, 0.2)', padding: '16px', borderRadius: '8px', color: 'var(--text-primary)' }}>
+                    <h4 style={{ margin: '0 0 8px 0', fontSize: '14px', display: 'flex', alignItems: 'center', gap: '6px' }}><Terminal size={16}/> Gelişmiş Prompt Kullanımı</h4>
+                    <p style={{ margin: 0, fontSize: '13px', lineHeight: '1.5', color: 'var(--text-muted)' }}>
+                      İleri seviye kullanıcılar için form doldurmak yerine doğrudan JSON anatomisini veren ham (raw) koddur. Bunu yapay zekaya (ChatGPT/Claude) kopyalayın ve ardından istediğiniz karmaşıklıktaki projenizi kendi kelimelerinizle tasarlamasını isteyin.
+                    </p>
+                  </div>
+                )}
+
+                {/* PROMPT PREVIEW SECTION */}
+                <div style={{display: 'flex', flexDirection: 'column', gap: '8px'}}>
+                  <div style={{ fontSize: '14px', fontWeight: 'bold', color: 'var(--text-primary)' }}>
+                    {mode === 'wizard' ? '2. Komutu Kopyalayın' : 'Sistem Kurallarını (Context) Kopyalayın'}
+                  </div>
+                  <p style={{fontSize: '13px', color: 'var(--text-muted)', margin: 0, lineHeight: '1.4'}}>
+                    Bu metni <strong>ChatGPT, Claude veya Gemini'ye</strong> yapıştırın.
+                  </p>
                   
                   <div style={{
-                    padding: '16px',
-                    maxHeight: '200px',
-                    overflowY: 'auto'
+                    background: '#1e1e1e', 
+                    border: '1px solid #333',
+                    borderRadius: '8px', 
+                    overflow: 'hidden',
+                    boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)'
                   }}>
-                    <pre style={{
-                      margin: 0,
-                      fontSize: '12px', 
-                      color: '#e4e4e7', 
-                      fontFamily: 'JetBrains Mono, Fira Code, monospace',
-                      whiteSpace: 'pre-wrap',
-                      lineHeight: '1.6'
+                    <div style={{
+                      display: 'flex', justifyContent: 'space-between', alignItems: 'center', 
+                      padding: '8px 12px', background: '#2d2d2d', borderBottom: '1px solid #444'
                     }}>
-                      {PROMPT_TEMPLATE}
-                    </pre>
+                      <div style={{fontSize: '11px', color: '#a3a3a3', fontWeight: '600', letterSpacing: '0.5px'}}>
+                        {mode === 'wizard' ? 'DİNAMİK LLM PROMPT' : 'RAW SYSTEM CONTEXT'}
+                      </div>
+                      <button 
+                        onClick={handleCopy}
+                        style={{
+                          background: (mode === 'advanced' || topic.trim()) ? (copied ? '#22c55e' : 'var(--accent-violet)') : '#555',
+                          border: 'none', cursor: (mode === 'advanced' || topic.trim()) ? 'pointer' : 'not-allowed',
+                          display: 'flex', alignItems: 'center', gap: '6px',
+                          color: '#fff', fontSize: '12px', fontWeight: '500',
+                          padding: '6px 12px', borderRadius: '4px',
+                          transition: 'all 0.2s ease'
+                        }}
+                      >
+                        {copied ? <Check size={14}/> : <Copy size={14}/>}
+                        {copied ? 'Kopyalandı' : 'Kopyala'}
+                      </button>
+                    </div>
+                    
+                    <div style={{ padding: '16px', maxHeight: '200px', overflowY: 'auto' }}>
+                      <pre style={{ margin: 0, fontSize: '12px', color: '#e4e4e7', fontFamily: 'monospace', whiteSpace: 'pre-wrap', lineHeight: '1.5' }}>
+                        {generatedPrompt}
+                      </pre>
+                    </div>
                   </div>
                 </div>
 
-                <div style={{fontSize: '12px', fontWeight: 'bold', color: 'var(--text-primary)', marginTop: '8px'}}>
-                  LLM'in Ürettiği JSON Kodunu Buraya Yapıştırın:
+                {/* PASTE SECTION */}
+                <div style={{display: 'flex', flexDirection: 'column', gap: '8px'}}>
+                  <div style={{ fontSize: '14px', fontWeight: 'bold', color: 'var(--text-primary)' }}>
+                    {mode === 'wizard' ? '3. Sonucu Yapıştırın' : 'AI Çıktısını Yapıştırın'}
+                  </div>
+                  <textarea 
+                    className="input"
+                    style={{
+                      minHeight: '150px', 
+                      resize: 'vertical', 
+                      fontFamily: 'monospace', 
+                      fontSize: '13px',
+                      backgroundColor: 'var(--bg-primary)',
+                      color: 'var(--text-primary)',
+                      border: '1px solid var(--border-default)',
+                    }}
+                    placeholder='{&#10;  "nodes": [...],&#10;  "edges": [...]&#10;}'
+                    value={text}
+                    onChange={(e) => setText(e.target.value)}
+                  />
                 </div>
-                <textarea 
-                  className="input"
-                  style={{
-                    minHeight: '200px', 
-                    resize: 'vertical', 
-                    fontFamily: 'monospace', 
-                    fontSize: '13px',
-                    backgroundColor: 'var(--bg-primary)',
-                    color: 'var(--text-primary)',
-                    border: '1px solid var(--border-default)',
-                  }}
-                  placeholder='{&#10;  "nodes": [...],&#10;  "edges": [...]&#10;}'
-                  value={text}
-                  onChange={(e) => setText(e.target.value)}
-                />
               </div>
             ) : (
               <div style={{display: 'flex', flexDirection: 'column', gap: '24px', alignItems: 'center', padding: '24px 0'}}>
@@ -361,7 +500,7 @@ export default function RoadmapImportModal({ isOpen, onClose, boardId }) {
             )}
           </div>
 
-          <div className="modal-footer" style={{display: 'flex', justifyContent: 'space-between'}}>
+          <div className="modal-footer" style={{display: 'flex', justifyContent: 'space-between', borderTop: '1px solid var(--border-default)'}}>
             {step === 2 ? (
               <button onClick={() => setStep(1)} className="btn btn-ghost">Geri Dön</button>
             ) : (

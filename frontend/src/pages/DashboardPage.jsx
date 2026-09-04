@@ -5,7 +5,6 @@ import { Plus, Folder, File, GitBranch, Edit2, Trash2, FolderOpen, Loader2 } fro
 import useAuthStore from '../stores/authStore';
 import useWorkspaceStore from '../stores/workspaceStore';
 import useUIStore from '../stores/uiStore';
-import CreateBoardModal from '../components/board/CreateBoardModal';
 import EditBoardModal from '../components/board/EditBoardModal';
 import EditProjectModal from '../components/workspace/EditProjectModal';
 import toast from 'react-hot-toast';
@@ -30,7 +29,7 @@ export default function DashboardPage() {
   // Board operations
   const deleteBoard = useWorkspaceStore(s => s.deleteBoard);
   const deleteProject = useWorkspaceStore(s => s.deleteProject);
-  const { openCreateBoardModal, openCreateProjectModal, createBoardModalOpen, openConfirmModal } = useUIStore();
+  const { openCreateBoardModal, openCreateProjectModal, openConfirmModal } = useUIStore();
   
   const [editingBoard, setEditingBoard] = useState(null);
   const [editingProject, setEditingProject] = useState(null);
@@ -216,7 +215,6 @@ export default function DashboardPage() {
         </div>
       </div>
 
-      {createBoardModalOpen && <CreateBoardModal />}
       {editingBoard && <EditBoardModal board={editingBoard} onClose={() => setEditingBoard(null)} />}
       {editingProject && <EditProjectModal project={editingProject} onClose={() => setEditingProject(null)} />}
     </div>

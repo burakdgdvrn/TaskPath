@@ -4,8 +4,12 @@ import { motion, AnimatePresence } from 'framer-motion';
 import useWorkspaceStore from '../../stores/workspaceStore';
 import useUIStore from '../../stores/uiStore';
 import toast from 'react-hot-toast';
+import { useParams } from 'react-router-dom';
 
 export default function CreateBoardModal({ initialProjectId = null }) {
+  const { projectId: urlProjectId } = useParams();
+  const effectiveProjectId = initialProjectId || urlProjectId || null;
+
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -19,7 +23,7 @@ export default function CreateBoardModal({ initialProjectId = null }) {
     if (!name.trim()) return;
     setIsSubmitting(true);
     try {
-      await createBoard(name.trim(), description.trim(), initialProjectId);
+      await createBoard(name.trim(), description.trim(), effectiveProjectId);
       toast.success(`"${name}" oluşturuldu!`);
       closeModal();
     } catch (err) {

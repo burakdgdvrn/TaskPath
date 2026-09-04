@@ -9,6 +9,7 @@ import InviteMemberModal from '../workspace/InviteMemberModal';
 import InboxModal from '../workspace/InboxModal';
 import GlobalChatWidget from '../chat/GlobalChatWidget';
 import OnboardingModal from './OnboardingModal';
+import CreateBoardModal from '../board/CreateBoardModal';
 import useUIStore from '../../stores/uiStore';
 import useSocket from '../../hooks/useSocket';
 import { useEffect, useCallback } from 'react';
@@ -34,6 +35,7 @@ export default function AppLayout() {
   const onboardingModalOpen = useUIStore(s => s.onboardingModalOpen);
   const closeOnboardingModal = useUIStore(s => s.closeOnboardingModal);
   const openOnboardingModal = useUIStore(s => s.openOnboardingModal);
+  const createBoardModalOpen = useUIStore(s => s.createBoardModalOpen);
 
   useEffect(() => {
     const hasSeenOnboarding = localStorage.getItem('taskpath_has_seen_onboarding');
@@ -73,6 +75,7 @@ export default function AppLayout() {
       {profileModalOpen && <ProfileSettingsModal />}
       {createWorkspaceModalOpen && <CreateWorkspaceModal onClose={closeCreateWorkspaceModal} />}
       {createProjectModalOpen && <CreateProjectModal onClose={closeCreateProjectModal} />}
+      {createBoardModalOpen && <CreateBoardModal />}
       {inviteMemberModalOpen && <InviteMemberModal onClose={closeInviteMemberModal} />}
       {inboxModalOpen && <InboxModal onClose={closeInboxModal} />}
       

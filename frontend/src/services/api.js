@@ -24,7 +24,15 @@ async function request(endpoint, options = {}) {
   const data = await response.json();
 
   if (!response.ok) {
-    throw new Error(data.detail || 'Bir hata oluştu');
+    let errorMessage = 'Bir hata oluştu';
+    if (data.detail) {
+      if (Array.isArray(data.detail)) {
+        errorMessage = data.detail[0].msg;
+      } else if (typeof data.detail === 'string') {
+        errorMessage = data.detail;
+      }
+    }
+    throw new Error(errorMessage);
   }
 
   return data;

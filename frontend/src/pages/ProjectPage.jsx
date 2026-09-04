@@ -5,7 +5,6 @@ import { Plus, File, Edit2, Trash2, FolderOpen, Loader2 } from 'lucide-react';
 import useAuthStore from '../stores/authStore';
 import useWorkspaceStore from '../stores/workspaceStore';
 import useUIStore from '../stores/uiStore';
-import CreateBoardModal from '../components/board/CreateBoardModal';
 import EditBoardModal from '../components/board/EditBoardModal';
 import toast from 'react-hot-toast';
 
@@ -30,7 +29,7 @@ export default function ProjectPage() {
 
   // Board operations
   const deleteBoard = useWorkspaceStore(s => s.deleteBoard);
-  const { openCreateBoardModal, createBoardModalOpen, openConfirmModal } = useUIStore();
+  const { openCreateBoardModal, openConfirmModal } = useUIStore();
   
   const [editingBoard, setEditingBoard] = useState(null);
 
@@ -150,7 +149,6 @@ export default function ProjectPage() {
         </div>
       </div>
 
-      {createBoardModalOpen && <CreateBoardModal initialProjectId={projectId} />}
       {editingBoard && <EditBoardModal board={editingBoard} onClose={() => setEditingBoard(null)} />}
     </div>
   );
