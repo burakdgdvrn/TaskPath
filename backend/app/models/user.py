@@ -1,6 +1,6 @@
 import uuid
 from datetime import datetime
-from sqlalchemy import Column, String, DateTime, func
+from sqlalchemy import Column, String, DateTime, func, Boolean
 from sqlalchemy.orm import relationship
 from app.database import Base
 
@@ -19,6 +19,7 @@ class User(Base):
     display_name = Column(String(100), nullable=False)
     avatar_color = Column(String(20), default="#8b5cf6")
     avatar_base64 = Column(String, nullable=True)
+    is_admin = Column(Boolean, default=False)
     created_at = Column(DateTime, default=func.now())
 
     # Relationships

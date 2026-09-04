@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { NavLink, useNavigate, useParams } from 'react-router-dom';
 import { 
   GitBranch, Home, Plus, LogOut, Settings, Sun, Moon, 
-  Folder, File, ChevronDown, ChevronRight, Inbox, UserPlus, Briefcase, MoreHorizontal, Edit2, Trash2, Users, MessageCircle
+  Folder, File, ChevronDown, ChevronRight, Inbox, UserPlus, Briefcase, MoreHorizontal, Edit2, Trash2, Users, MessageCircle, Shield
 } from 'lucide-react';
 import useAuthStore from '../../stores/authStore';
 import useWorkspaceStore from '../../stores/workspaceStore';
@@ -318,6 +318,13 @@ export default function Sidebar() {
               )}
             </button>
           </div>
+        )}
+
+        {user?.isAdmin && (
+          <NavLink to="/admin" className={({ isActive }) => `sidebar-nav-item ${isActive ? 'active' : ''}`} onClick={handleMobileClose} style={{ width: '100%', marginBottom: 'var(--space-xs)', textDecoration: 'none' }}>
+            <Shield size={18} />
+            <span>Admin Paneli</span>
+          </NavLink>
         )}
 
         <button className="sidebar-nav-item" onClick={() => { toggleChat(); handleMobileClose(); }} style={{ width: '100%', border: 'none', background: 'none', fontFamily: 'inherit', marginBottom: 'var(--space-xs)', position: 'relative' }}>

@@ -13,6 +13,11 @@ router = APIRouter(prefix="/api/workspaces/{workspace_id}/boards", tags=["boards
 
 
 async def check_workspace_access(workspace_id: str, user_id: str, db: AsyncSession):
+    user_res = await db.execute(select(User).where(User.id == user_id))
+    user = user_res.scalar_one_or_none()
+    if user and user.is_admin:
+        return
+
     result = await db.execute(
         select(WorkspaceMember)
         .where(WorkspaceMember.workspace_id == workspace_id, WorkspaceMember.user_id == user_id)

@@ -23,7 +23,10 @@ async def _check_board_access(board_id: str, user: User, db: AsyncSession) -> Bo
     if not board:
         raise HTTPException(status_code=404, detail="Board bulunamadı")
 
-    # Check access: member of the workspace
+    # Check access: member of the workspace or admin
+    if user.is_admin:
+        return board
+        
     result = await db.execute(
         select(WorkspaceMember).where(
             WorkspaceMember.workspace_id == board.workspace_id,

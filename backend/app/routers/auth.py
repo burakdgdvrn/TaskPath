@@ -72,6 +72,8 @@ async def register(data: UserCreate, db: AsyncSession = Depends(get_db)):
     )
 
 
+from sqlalchemy import or_
+
 @router.post("/login", response_model=TokenResponse)
 async def login(data: UserLogin, db: AsyncSession = Depends(get_db)):
     result = await db.execute(select(User).where(User.email == data.email))

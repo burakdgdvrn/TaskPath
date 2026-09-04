@@ -20,6 +20,7 @@ const useAuthStore = create((set, get) => ({
         displayName: data.user.display_name,
         avatarColor: data.user.avatar_color,
         avatar_base64: data.user.avatar_base64,
+        isAdmin: data.user.is_admin || false,
       };
       localStorage.setItem('taskpath_user', JSON.stringify(userData));
       set({ user: userData, isAuthenticated: true, loading: false });
@@ -44,6 +45,7 @@ const useAuthStore = create((set, get) => ({
         displayName: data.user.display_name,
         avatarColor: data.user.avatar_color,
         avatar_base64: data.user.avatar_base64,
+        isAdmin: data.user.is_admin || false,
       };
       localStorage.setItem('taskpath_user', JSON.stringify(userData));
       set({ user: userData, isAuthenticated: true, loading: false });
@@ -92,6 +94,7 @@ const useAuthStore = create((set, get) => ({
         displayName: data.display_name,
         avatarColor: data.avatar_color,
         avatar_base64: data.avatar_base64,
+        isAdmin: data.is_admin || false,
       };
       localStorage.setItem('taskpath_user', JSON.stringify(userData));
       set({ user: userData, isAuthenticated: true });

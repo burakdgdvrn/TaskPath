@@ -351,3 +351,44 @@ export function createBoardWebSocket(boardId) {
   if (!token) return null;
   return new WebSocket(`${WS_BASE}/ws/board/${boardId}?token=${token}`);
 }
+
+// ──── ADMIN ────
+
+export async function apiAdminGetStats() {
+  return request('/admin/stats');
+}
+
+export async function apiAdminGetUsers() {
+  return request('/admin/users');
+}
+
+export async function apiAdminToggleUserRole(userId) {
+  return request(`/admin/users/${userId}/role`, { method: 'PUT' });
+}
+
+export async function apiAdminDeleteUser(userId) {
+  return request(`/admin/users/${userId}`, { method: 'DELETE' });
+}
+
+export async function apiAdminResetUserPassword(userId, newPassword) {
+  return request(`/admin/users/${userId}/password`, {
+    method: 'PUT',
+    body: JSON.stringify({ new_password: newPassword })
+  });
+}
+
+export async function apiAdminGetContentTree() {
+  return request('/admin/content/tree');
+}
+
+export async function apiAdminDeleteWorkspace(workspaceId) {
+  return request(`/admin/workspaces/${workspaceId}`, { method: 'DELETE' });
+}
+
+export async function apiAdminDeleteProject(projectId) {
+  return request(`/admin/projects/${projectId}`, { method: 'DELETE' });
+}
+
+export async function apiAdminDeleteBoard(boardId) {
+  return request(`/admin/boards/${boardId}`, { method: 'DELETE' });
+}

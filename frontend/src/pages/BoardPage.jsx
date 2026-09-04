@@ -523,10 +523,12 @@ function BoardCanvas() {
     });
   }, []);
 
-  if (!board) {
+  const isDataLoaded = useBoardStore(s => s.nodes)[boardId] !== undefined;
+
+  if (!board && !isDataLoaded) {
     return (
       <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100%', color: 'var(--text-muted)' }}>
-        <h2>Yükleniyor veya pano bulunamadı...</h2>
+        <h2>Yükleniyor...</h2>
       </div>
     );
   }

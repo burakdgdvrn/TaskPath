@@ -114,6 +114,26 @@ export default function ProfileSettingsModal() {
     reader.readAsDataURL(file);
   };
 
+  const handleRemoveAvatar = async () => {
+    setIsUpdatingProfile(true);
+    try {
+      const data = await apiUpdateProfile({ 
+        display_name: displayName.trim(),
+        avatar_base64: null 
+      });
+      setAvatarBase64(null);
+      updateLocalUser({ 
+        displayName: data.display_name,
+        avatar_base64: null 
+      });
+      toast.success('Profil fotoğrafı kaldırıldı');
+    } catch (err) {
+      toast.error(err.message || 'Fotoğraf kaldırılamadı');
+    } finally {
+      setIsUpdatingProfile(false);
+    }
+  };
+
   const handlePasswordSubmit = async (e) => {
     e.preventDefault();
     if (newPassword !== confirmPassword) {
@@ -231,6 +251,17 @@ export default function ProfileSettingsModal() {
                   accept="image/*"
                   onChange={handleAvatarChange}
                 />
+                {avatarBase64 && (
+                  <button 
+                    type="button" 
+                    className="btn btn-ghost btn-sm" 
+                    style={{ marginTop: 'var(--space-sm)', color: 'var(--accent-red)' }}
+                    onClick={handleRemoveAvatar}
+                    disabled={isUpdatingProfile}
+                  >
+                    Fotoğrafı Kaldır
+                  </button>
+                )}
               </div>
 
               <form onSubmit={handleProfileSubmit} style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-md)' }}>

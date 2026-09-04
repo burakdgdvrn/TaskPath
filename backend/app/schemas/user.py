@@ -21,6 +21,7 @@ class UserResponse(BaseModel):
     display_name: str
     avatar_color: str
     avatar_base64: Optional[str] = None
+    is_admin: bool = False
     created_at: Optional[datetime] = None
 
     class Config:
