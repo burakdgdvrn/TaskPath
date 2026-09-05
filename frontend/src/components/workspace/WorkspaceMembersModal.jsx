@@ -26,7 +26,7 @@ export default function WorkspaceMembersModal({ workspace, onClose }) {
   const currentWorkspace = workspaces.find(w => w.id === workspace?.id) || workspace;
   
   // Am I the owner? (Only owners can remove members or send invites in this basic permission model)
-  const isOwner = currentWorkspace?.owner_id === currentUser?.id;
+  const isOwner = currentWorkspace?.owner_id === currentUser?.id || currentWorkspace?.members?.some(m => m.user.id === currentUser?.id && m.role === 'owner');
 
   const loadInvites = async () => {
     if (!currentWorkspace) return;

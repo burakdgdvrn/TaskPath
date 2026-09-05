@@ -66,7 +66,11 @@ async def delete_workspace(
     if not workspace:
         raise HTTPException(status_code=404, detail="Workspace bulunamadı")
 
-    if workspace.owner_id != current_user.id:
+    member_res = await db.execute(select(WorkspaceMember).where(WorkspaceMember.workspace_id == workspace_id, WorkspaceMember.user_id == current_user.id))
+    member = member_res.scalar_one_or_none()
+    is_owner = (member and member.role == "owner") or workspace.owner_id == current_user.id
+
+    if not is_owner:
         raise HTTPException(status_code=403, detail="Bunu sadece alan sahibi silebilir")
 
     await db.delete(workspace)
@@ -87,7 +91,11 @@ async def update_workspace(
     if not workspace:
         raise HTTPException(status_code=404, detail="Workspace bulunamadı")
 
-    if workspace.owner_id != current_user.id:
+    member_res = await db.execute(select(WorkspaceMember).where(WorkspaceMember.workspace_id == workspace_id, WorkspaceMember.user_id == current_user.id))
+    member = member_res.scalar_one_or_none()
+    is_owner = (member and member.role == "owner") or workspace.owner_id == current_user.id
+
+    if not is_owner:
         raise HTTPException(status_code=403, detail="Bunu sadece alan sahibi güncelleyebilir")
 
     if data.name is not None:
@@ -119,7 +127,11 @@ async def remove_member(
     if not workspace:
         raise HTTPException(status_code=404, detail="Workspace bulunamadı")
         
-    if workspace.owner_id != current_user.id:
+    current_member_res = await db.execute(select(WorkspaceMember).where(WorkspaceMember.workspace_id == workspace_id, WorkspaceMember.user_id == current_user.id))
+    current_member = current_member_res.scalar_one_or_none()
+    is_owner = (current_member and current_member.role == "owner") or workspace.owner_id == current_user.id
+        
+    if not is_owner:
         raise HTTPException(status_code=403, detail="Bunu sadece alan sahibi silebilir")
         
     if workspace.owner_id == user_id:

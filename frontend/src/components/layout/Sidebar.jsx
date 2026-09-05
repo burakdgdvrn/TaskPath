@@ -144,7 +144,7 @@ export default function Sidebar() {
             >
               <Plus size={14} style={{ marginRight: 6 }} /> Yeni Alan Oluştur
             </button>
-            {activeWorkspace && activeWorkspace.owner_id === user?.id && (
+            {activeWorkspace && (activeWorkspace.owner_id === user?.id || activeWorkspace.members?.some(m => m.user.id === user?.id && m.role === 'owner')) && (
               <>
                 <button 
                   className="btn btn-ghost" 
