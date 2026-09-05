@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState, useCallback } from 'react';
 import { createBoardWebSocket } from '../services/api';
 import useBoardStore from '../stores/boardStore';
+import toast from 'react-hot-toast';
 
 /**
  * WebSocket hook for real-time board collaboration.
@@ -11,6 +12,7 @@ export default function useWebSocket(boardId) {
   const [onlineUsers, setOnlineUsers] = useState([]);
   const [cursors, setCursors] = useState({}); // userId -> {x, y, displayName, avatarColor}
   const reconnectTimeout = useRef(null);
+  const reconnectAttempts = useRef(0);
 
   const connect = useCallback(() => {
     if (!boardId) return;
@@ -22,6 +24,10 @@ export default function useWebSocket(boardId) {
 
     ws.onopen = () => {
       console.log('[WS] Connected to board:', boardId);
+      if (reconnectAttempts.current >= 3) {
+        toast.success("Canlı senkronizasyon yeniden sağlandı.");
+      }
+      reconnectAttempts.current = 0;
     };
 
     ws.onmessage = (event) => {
@@ -79,8 +85,15 @@ export default function useWebSocket(boardId) {
     };
 
     ws.onclose = () => {
-      console.log('[WS] Disconnected, reconnecting in 3s...');
-      reconnectTimeout.current = setTimeout(connect, 3000);
+      reconnectAttempts.current += 1;
+      const delay = Math.min(1000 * Math.pow(2, reconnectAttempts.current), 30000);
+      
+      console.log(`[WS] Disconnected, reconnecting in ${delay}ms...`);
+      if (reconnectAttempts.current === 3) {
+        toast.error("Canlı senkronizasyon koptu. Yeniden bağlanmaya çalışılıyor...");
+      }
+      
+      reconnectTimeout.current = setTimeout(connect, delay);
     };
 
     ws.onerror = (err) => {

@@ -59,6 +59,7 @@ const useBoardStore = create((set, get) => ({
 
   loadBoardData: async (boardId) => {
     try {
+      set({ loading: true });
       const [nodes, edges] = await Promise.all([
         apiListNodes(boardId),
         apiListEdges(boardId),
@@ -69,6 +70,8 @@ const useBoardStore = create((set, get) => ({
       }));
     } catch (err) {
       console.error('Failed to load board data:', err);
+    } finally {
+      set({ loading: false });
     }
   },
 

@@ -20,6 +20,7 @@ import NodeDetailPanel from '../components/canvas/NodeDetailPanel';
 import MultiNodeDetailPanel from '../components/canvas/MultiNodeDetailPanel';
 import CreateNodeModal from '../components/canvas/CreateNodeModal';
 import RoadmapImportModal from '../components/canvas/RoadmapImportModal';
+import ErrorBoundary from '../components/common/ErrorBoundary';
 import { computeAllEdgeRoutes } from '../components/canvas/smartEdgeUtil';
 import useBoardStore from '../stores/boardStore';
 import useWorkspaceStore from '../stores/workspaceStore';
@@ -523,12 +524,17 @@ function BoardCanvas() {
     });
   }, []);
 
+  const loading = useBoardStore(s => s.loading);
   const isDataLoaded = useBoardStore(s => s.nodes)[boardId] !== undefined;
 
-  if (!board && !isDataLoaded) {
+  if (loading || (!board && !isDataLoaded)) {
     return (
-      <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100%', color: 'var(--text-muted)' }}>
-        <h2>Yükleniyor...</h2>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '16px', justifyContent: 'center', alignItems: 'center', height: '100%', color: 'var(--text-muted)' }}>
+        <div style={{ width: 40, height: 40, border: '3px solid var(--border-subtle)', borderTop: '3px solid var(--accent-violet)', borderRadius: '50%', animation: 'spin 1s linear infinite' }} />
+        <h2 style={{ fontSize: '18px', fontWeight: 500 }}>Panonuz Yükleniyor...</h2>
+        <style>{`
+          @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+        `}</style>
       </div>
     );
   }
@@ -825,7 +831,9 @@ function BoardCanvas() {
 export default function BoardPage() {
   return (
     <ReactFlowProvider>
-      <BoardCanvas />
+      <ErrorBoundary fallbackTitle="Pano Yüklenirken Hata Oluştu">
+        <BoardCanvas />
+      </ErrorBoundary>
     </ReactFlowProvider>
   );
 }
