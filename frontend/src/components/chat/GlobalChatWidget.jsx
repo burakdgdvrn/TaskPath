@@ -7,7 +7,7 @@ import useAuthStore from '../../stores/authStore';
 import useWorkspaceStore from '../../stores/workspaceStore';
 import useUIStore from '../../stores/uiStore';
 import { 
-  apiListFriends, apiSendFriendRequest, apiUpdateFriendship, apiRemoveFriend,
+  apiListFriends, apiSendFriendRequestByUsername, apiUpdateFriendship, apiRemoveFriend,
   apiGetDirectMessages, apiSendDirectMessage, apiClearDirectMessages,
   apiEditMessage, apiDeleteMessageForEveryone
 } from '../../services/api';
@@ -59,6 +59,7 @@ export default function GlobalChatWidget() {
   
   const [selectedChat, setSelectedChat] = useState(null); // { id, name, type: 'direct' | 'workspace' }
   const [messages, setMessages] = useState([]);
+  const [isLoadingMessages, setIsLoadingMessages] = useState(false);
   const [messageInput, setMessageInput] = useState('');
   
   const [editingMessageId, setEditingMessageId] = useState(null);
@@ -66,6 +67,7 @@ export default function GlobalChatWidget() {
   
   const [isAddingFriend, setIsAddingFriend] = useState(false);
   const [friendIdInput, setFriendIdInput] = useState('');
+  const [friendSuccessMessage, setFriendSuccessMessage] = useState('');
   
   const messagesEndRef = useRef(null);
 
@@ -97,6 +99,8 @@ export default function GlobalChatWidget() {
   
   const loadMessages = async (chat) => {
     try {
+      setIsLoadingMessages(true);
+      setMessages([]);
       let data = [];
       if (chat.type === 'direct') {
         data = await apiGetDirectMessages(chat.id);
@@ -125,6 +129,8 @@ export default function GlobalChatWidget() {
       scrollToBottom();
     } catch (err) {
       console.error(err);
+    } finally {
+      setIsLoadingMessages(false);
     }
   };
 
@@ -214,10 +220,10 @@ export default function GlobalChatWidget() {
       e.preventDefault();
       if (!friendIdInput.trim()) return;
       try {
-          await apiSendFriendRequest(friendIdInput.trim());
-          toast.success("Arkadaşlık isteği gönderildi!");
+          await apiSendFriendRequestByUsername(friendIdInput.trim());
+          setFriendSuccessMessage("Arkadaşlık isteği gönderildi!");
           setFriendIdInput('');
-          setIsAddingFriend(false);
+          setTimeout(() => setFriendSuccessMessage(''), 3000);
           loadFriends();
       } catch (err) {
           toast.error(err.message || "İstek gönderilirken hata oluştu");
@@ -412,20 +418,27 @@ export default function GlobalChatWidget() {
                           <Plus size={16} /> Arkadaş Ekle
                         </button>
                       ) : (
-                        <form onSubmit={handleAddFriend} style={{display: 'flex', gap: '8px', padding: '0 8px'}}>
-                          <input 
-                            type="text"
-                            value={friendIdInput}
-                            onChange={(e) => setFriendIdInput(e.target.value)}
-                            placeholder="Kullanıcı ID'sini girin..."
-                            className="input"
-                            style={{ flex: 1, padding: '4px 8px', fontSize: '12px' }}
-                            autoFocus
-                          />
-                          <button type="submit" className="btn btn-primary btn-sm">Ekle</button>
-                          <button type="button" onClick={() => setIsAddingFriend(false)} className="btn-icon btn-ghost btn-sm">
-                            <X size={14} />
-                          </button>
+                        <form onSubmit={handleAddFriend} style={{display: 'flex', flexDirection: 'column', gap: '8px', padding: '0 8px'}}>
+                          <div style={{display: 'flex', gap: '8px'}}>
+                            <input 
+                              type="text"
+                              value={friendIdInput}
+                              onChange={(e) => setFriendIdInput(e.target.value)}
+                              placeholder="Kullanıcı adını girin..."
+                              className="input"
+                              style={{ flex: 1, padding: '4px 8px', fontSize: '12px' }}
+                              autoFocus
+                            />
+                            <button type="submit" className="btn btn-primary btn-sm">Ekle</button>
+                            <button type="button" onClick={() => { setIsAddingFriend(false); setFriendSuccessMessage(''); }} className="btn-icon btn-ghost btn-sm">
+                              <X size={14} />
+                            </button>
+                          </div>
+                          {friendSuccessMessage && (
+                            <div style={{ fontSize: '11px', color: 'var(--accent-teal)', textAlign: 'center' }}>
+                              {friendSuccessMessage}
+                            </div>
+                          )}
                         </form>
                       )}
 
@@ -461,7 +474,11 @@ export default function GlobalChatWidget() {
               <div className="chat-view-container" style={{display: 'flex', flexDirection: 'column', height: '100%', position: 'relative', overflow: 'hidden'}}>
                 <DoodleBackground theme={theme} />
                 <div className="chat-messages" style={{ zIndex: 1, position: 'relative' }}>
-                  {messages.length === 0 ? (
+                  {isLoadingMessages ? (
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%', color: 'var(--text-muted)' }}>
+                      Mesajlar yükleniyor...
+                    </div>
+                  ) : messages.length === 0 ? (
                     <div style={{
                       display: 'flex', 
                       flexDirection: 'column',

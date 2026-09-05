@@ -12,7 +12,7 @@ const useUIStore = create((set) => ({
   commandPaletteOpen: false,
   isChatOpen: false,
   activeChatId: null,
-  unreadChatCounts: {},
+  unreadChatCounts: JSON.parse(localStorage.getItem('taskpath_unread_chats') || '{}'),
 
   // Confirm Modal
   confirmModalOpen: false,
@@ -75,12 +75,18 @@ const useUIStore = create((set) => ({
       return {}; // User is actively looking at this chat
     }
     const current = state.unreadChatCounts[chatId] || 0;
-    return { unreadChatCounts: { ...state.unreadChatCounts, [chatId]: current + 1 } };
+    const newCounts = { ...state.unreadChatCounts, [chatId]: current + 1 };
+    localStorage.setItem('taskpath_unread_chats', JSON.stringify(newCounts));
+    return { unreadChatCounts: newCounts };
   }),
   clearUnreadChat: (chatId) => set(state => {
-    if (!chatId) return { unreadChatCounts: {} }; // Clear all if no ID
+    if (!chatId) {
+      localStorage.setItem('taskpath_unread_chats', '{}');
+      return { unreadChatCounts: {} }; 
+    }
     const newCounts = { ...state.unreadChatCounts };
     delete newCounts[chatId];
+    localStorage.setItem('taskpath_unread_chats', JSON.stringify(newCounts));
     return { unreadChatCounts: newCounts };
   }),
 

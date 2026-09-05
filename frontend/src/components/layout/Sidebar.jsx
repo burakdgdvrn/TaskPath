@@ -312,7 +312,7 @@ export default function Sidebar() {
             <button className="btn btn-secondary btn-sm" style={{ flex: 1, position: 'relative' }} onClick={openInboxModal}>
               <Inbox size={14} /> Gelen 
               {unreadCount > 0 && (
-                <span style={{ position: 'absolute', top: -5, right: -5, background: 'var(--error)', color: 'var(--badge-text)', borderRadius: '50%', width: 16, height: 16, fontSize: 10, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                <span style={{ position: 'absolute', top: -5, right: -5, background: 'var(--accent-rose)', color: 'white', borderRadius: '50%', minWidth: 16, height: 16, fontSize: 10, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '0 4px', fontWeight: 'bold' }}>
                   {unreadCount}
                 </span>
               )}

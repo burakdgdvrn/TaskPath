@@ -4,9 +4,13 @@ import { X, Save, Trash2, CheckSquare } from 'lucide-react';
 import toast from 'react-hot-toast';
 import useBoardStore from '../../stores/boardStore';
 import useAuthStore from '../../stores/authStore';
+import useWorkspaceStore from '../../stores/workspaceStore';
 
 export default function MultiNodeDetailPanel({ nodes, boardId, onClose, broadcast }) {
-  const users = useAuthStore(s => s.users);
+  const activeWorkspaceId = useWorkspaceStore(s => s.activeWorkspaceId);
+  const workspaces = useWorkspaceStore(s => s.workspaces);
+  const activeWorkspace = workspaces.find(w => w.id === activeWorkspaceId);
+  const users = activeWorkspace?.members?.map(m => m.user) || [];
   
   const [formData, setFormData] = useState({
     status: '', // empty means no change
@@ -135,7 +139,7 @@ export default function MultiNodeDetailPanel({ nodes, boardId, onClose, broadcas
               <option value="none">Kimse (Atamayı Kaldır)</option>
               {users.map(u => (
                 <option key={u.id} value={u.id}>
-                  {u.displayName}
+                  {u.display_name}
                 </option>
               ))}
             </select>

@@ -3,9 +3,13 @@ import { Handle, Position } from '@xyflow/react';
 import { motion } from 'framer-motion';
 import { FileText } from 'lucide-react';
 import useAuthStore from '../../stores/authStore';
+import useWorkspaceStore from '../../stores/workspaceStore';
 
 function WikiNode({ data, selected }) {
-  const users = useAuthStore(s => s.users);
+  const activeWorkspaceId = useWorkspaceStore(s => s.activeWorkspaceId);
+  const workspaces = useWorkspaceStore(s => s.workspaces);
+  const activeWorkspace = workspaces.find(w => w.id === activeWorkspaceId);
+  const users = activeWorkspace?.members?.map(m => m.user) || [];
   const assignee = data.assignedTo ? users.find(u => u.id === data.assignedTo) : null;
   
   // Wiki nodes are styled in green tones
@@ -68,10 +72,10 @@ function WikiNode({ data, selected }) {
         {assignee && (
           <div
             className="task-node-assignee"
-            style={{ background: assignee.avatarColor }}
-            title={assignee.displayName}
+            style={{ background: assignee.avatar_color || 'var(--accent-emerald)' }}
+            title={assignee.display_name}
           >
-            {assignee.displayName.charAt(0).toUpperCase()}
+            {assignee.display_name?.charAt(0).toUpperCase()}
           </div>
         )}
       </div>

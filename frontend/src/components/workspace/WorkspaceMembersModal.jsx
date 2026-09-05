@@ -215,6 +215,11 @@ export default function WorkspaceMembersModal({ workspace, onClose }) {
                       <UserPlus size={18} style={{ marginRight: 6 }}/> {isSending ? 'Gönderiliyor...' : 'Davet Et'}
                     </button>
                   </form>
+                  {inviteSuccessMessage && (
+                    <div style={{ marginTop: 'var(--space-sm)', fontSize: 'var(--font-sm)', color: 'var(--accent-teal)', textAlign: 'center' }}>
+                      {inviteSuccessMessage}
+                    </div>
+                  )}
                 </div>
 
                 {/* Sent Invites List */}

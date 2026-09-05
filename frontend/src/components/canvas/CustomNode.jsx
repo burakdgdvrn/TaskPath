@@ -5,6 +5,7 @@ import { Clock, AlertTriangle, Tag, CheckCircle2, Circle, ChevronsUp, Equal, Che
 import { useParams } from 'react-router-dom';
 import useAuthStore from '../../stores/authStore';
 import useBoardStore from '../../stores/boardStore';
+import useWorkspaceStore from '../../stores/workspaceStore';
 
 const STATUS_COLORS = {
   todo: '#64748b',
@@ -36,7 +37,10 @@ const PriorityIcon = ({ priority, color }) => {
 
 function CustomNode({ id, data, selected }) {
   const { boardId } = useParams();
-  const users = useAuthStore(s => s.users);
+  const activeWorkspaceId = useWorkspaceStore(s => s.activeWorkspaceId);
+  const workspaces = useWorkspaceStore(s => s.workspaces);
+  const activeWorkspace = workspaces.find(w => w.id === activeWorkspaceId);
+  const users = activeWorkspace?.members?.map(m => m.user) || [];
   const updateNode = useBoardStore(s => s.updateNode);
   
   const assignee = data.assignedTo ? users.find(u => u.id === data.assignedTo) : null;
@@ -158,12 +162,12 @@ function CustomNode({ id, data, selected }) {
           <div
             className="task-node-assignee"
             style={{ 
-              background: assignee.avatar_base64 ? `url(${assignee.avatar_base64}) center/cover no-repeat` : assignee.avatarColor,
+              background: assignee.avatar_base64 ? `url(${assignee.avatar_base64}) center/cover no-repeat` : (assignee.avatar_color || 'var(--accent-blue)'),
               border: assignee.avatar_base64 ? '1px solid var(--border-subtle)' : 'none'
             }}
-            title={assignee.displayName}
+            title={assignee.display_name}
           >
-            {!assignee.avatar_base64 && assignee.displayName.charAt(0).toUpperCase()}
+            {!assignee.avatar_base64 && assignee.display_name?.charAt(0).toUpperCase()}
           </div>
         )}
       </div>

@@ -7,8 +7,8 @@ import { useParams } from 'react-router-dom';
 function MilestoneNode({ id, data, selected }) {
   const [isHovered, setIsHovered] = useState(false);
   const { boardId } = useParams();
-  const edges = useBoardStore(s => s.edges[boardId] || []);
-  const nodes = useBoardStore(s => s.nodes[boardId] || []);
+  const edges = useBoardStore(s => s.edges[boardId]) || [];
+  const nodes = useBoardStore(s => s.nodes[boardId]) || [];
   
   const incomingEdgeSources = edges.filter(e => e.target === id).map(e => e.source);
   const dependentNodes = nodes.filter(n => incomingEdgeSources.includes(n.id) && n.type === 'taskNode');

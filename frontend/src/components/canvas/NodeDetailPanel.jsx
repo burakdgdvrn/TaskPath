@@ -24,11 +24,10 @@ const PRIORITY_OPTIONS = [
 export default function NodeDetailPanel({ node, boardId, onClose, broadcast }) {
   const updateNode = useBoardStore(s => s.updateNode);
   const deleteNode = useBoardStore(s => s.deleteNode);
-  const users = useAuthStore(s => s.users);
-  
   const activeWorkspaceId = useWorkspaceStore(s => s.activeWorkspaceId);
   const workspaces = useWorkspaceStore(s => s.workspaces);
   const activeWorkspace = workspaces.find(w => w.id === activeWorkspaceId);
+  const users = activeWorkspace?.members?.map(m => m.user) || [];
   const isPersonalWorkspace = activeWorkspace && (!activeWorkspace.members || activeWorkspace.members.length <= 1);
 
   const [label, setLabel] = useState(node?.data?.label || '');
@@ -234,7 +233,7 @@ export default function NodeDetailPanel({ node, boardId, onClose, broadcast }) {
                   <select className="input" value={assignedTo} onChange={e => setAssignedTo(e.target.value)}>
                     <option value="">Kimse atanmadı</option>
                     {users.map(u => (
-                      <option key={u.id} value={u.id}>{u.displayName}</option>
+                      <option key={u.id} value={u.id}>{u.display_name}</option>
                     ))}
                   </select>
                 </div>
