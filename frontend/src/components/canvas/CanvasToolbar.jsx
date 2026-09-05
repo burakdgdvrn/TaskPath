@@ -31,11 +31,11 @@ export default function CanvasToolbar({ onAddNode, onUndo, onRedo, canUndo, canR
       >
         <Wand2 />
       </button>
-      
+
       <button
         className={`btn btn-icon btn-sm ${isSelectionMode ? 'btn-primary' : 'btn-ghost'}`}
         onClick={onToggleSelectionMode}
-        title="Çoklu Seçim Modu (Lasso)"
+        title="Çoklu Seçim Modu (Ctrl + Sol Tık)"
       >
         <MousePointer2 />
       </button>
