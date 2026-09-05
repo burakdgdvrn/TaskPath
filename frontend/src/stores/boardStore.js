@@ -59,7 +59,10 @@ const useBoardStore = create((set, get) => ({
 
   loadBoardData: async (boardId) => {
     try {
-      set({ loading: true });
+      const isInitialLoad = !get().nodes[boardId];
+      if (isInitialLoad) {
+        set({ loading: true });
+      }
       const [nodes, edges] = await Promise.all([
         apiListNodes(boardId),
         apiListEdges(boardId),
