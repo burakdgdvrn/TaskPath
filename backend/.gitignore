@@ -1,3 +1,33 @@
+# Python / FastAPI
 __pycache__/
+*.py[cod]
+*$py.class
+
+# Virtual environments
+venv/
+env/
+.venv/
+env.bak/
+venv.bak/
+
+# Environment variables
+.env
+.env.*
+!.env.example
+
+# SQLite Database
 *.db
-*.pyc
+*.sqlite
+*.sqlite3
+taskpath.db
+test.db
+
+# IDEs and Editors
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS files
+.DS_Store
+Thumbs.db

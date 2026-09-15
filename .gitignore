@@ -1,0 +1,17 @@
+# IDEs and Editors
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Any random env files in root
+.env
+.env.*
+
+# Project specific old backups
+old_*.css
+old_*.js

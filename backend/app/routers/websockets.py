@@ -28,11 +28,15 @@ class ConnectionManager:
     async def send_personal_message(self, message: dict, user_id: str):
         if user_id in self.active_connections:
             text_data = json.dumps(message)
+            dead_connections = []
             for connection in self.active_connections[user_id]:
                 try:
                     await connection.send_text(text_data)
-                except:
-                    pass
+                except Exception:
+                    dead_connections.append(connection)
+            # Clean up dead connections
+            for dc in dead_connections:
+                self.disconnect(dc, user_id)
 
     async def broadcast_to_workspace(self, workspace_id: str, message: dict, db: AsyncSession):
         members = await db.execute(select(WorkspaceMember.user_id).where(WorkspaceMember.workspace_id == workspace_id))
@@ -52,3 +56,6 @@ async def websocket_endpoint(websocket: WebSocket, user_id: str):
             data = await websocket.receive_text()
     except WebSocketDisconnect:
         manager.disconnect(websocket, user_id)
+    except Exception:
+        manager.disconnect(websocket, user_id)
+

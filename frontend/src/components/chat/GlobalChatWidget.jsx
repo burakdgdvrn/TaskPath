@@ -134,38 +134,54 @@ export default function GlobalChatWidget() {
     }
   };
 
+  // Use a ref to track selectedChat in the WS handler to avoid stale closures
+  const selectedChatRef = useRef(null);
+  useEffect(() => {
+    selectedChatRef.current = selectedChat;
+  }, [selectedChat]);
+
   useEffect(() => {
     if (selectedChat) {
       setActiveChatId(selectedChat.id);
       clearUnreadChat(selectedChat.id);
       loadMessages(selectedChat);
+    } else {
+      setActiveChatId(null);
+    }
+  }, [selectedChat, setActiveChatId, clearUnreadChat]);
+
+  // Global WS listener for real-time chat messages — always active when chat widget exists
+  useEffect(() => {
+    const handleWsMessage = (e) => {
+      const currentChat = selectedChatRef.current;
       
-      const handleWsMessage = (e) => {
-        if (e.detail?.type === 'chat:receive') {
-          const msg = e.detail.message;
-          if (
-            (selectedChat.type === 'direct' && (msg.sender_id === selectedChat.id || msg.receiver_id === selectedChat.id)) ||
-            (selectedChat.type === 'workspace' && msg.workspace_id === selectedChat.id)
-          ) {
+      if (e.detail?.type === 'chat:receive') {
+        const msg = e.detail.message;
+        if (currentChat) {
+          const isForCurrentChat =
+            (currentChat.type === 'direct' && (msg.sender_id === currentChat.id || msg.receiver_id === currentChat.id)) ||
+            (currentChat.type === 'workspace' && msg.workspace_id === currentChat.id);
+          
+          if (isForCurrentChat) {
             setMessages(prev => {
               if (prev.find(m => m.id === msg.id)) return prev;
               return [...prev, msg];
             });
             scrollToBottom();
+            // Also clear unread since user is viewing this chat
+            clearUnreadChat(currentChat.id);
           }
-        } else if (e.detail?.type === 'chat:update') {
-          const updatedMsg = e.detail.message;
-          setMessages(prev => prev.map(m => m.id === updatedMsg.id ? updatedMsg : m));
-        } else if (e.detail?.type === 'friend:request' || e.detail?.type === 'friend:updated') {
-            loadFriends();
         }
-      };
-      window.addEventListener('ws:message', handleWsMessage);
-      return () => window.removeEventListener('ws:message', handleWsMessage);
-    } else {
-      setActiveChatId(null);
-    }
-  }, [selectedChat, setActiveChatId, clearUnreadChat]);
+      } else if (e.detail?.type === 'chat:update') {
+        const updatedMsg = e.detail.message;
+        setMessages(prev => prev.map(m => m.id === updatedMsg.id ? updatedMsg : m));
+      } else if (e.detail?.type === 'friend:request' || e.detail?.type === 'friend:updated') {
+        loadFriends();
+      }
+    };
+    window.addEventListener('ws:message', handleWsMessage);
+    return () => window.removeEventListener('ws:message', handleWsMessage);
+  }, [clearUnreadChat]);
 
   const scrollToBottom = () => {
     setTimeout(() => {
